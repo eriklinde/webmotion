@@ -9,11 +9,24 @@ var keysurfHelpers = (function() {
 	_keysurfHelpers.alternativeColor = '#5280bb';
 	_keysurfHelpers.viewPortHeight;
 	_keysurfHelpers.keyMap = {}; // maps the keys to the URLs
+	_keysurfHelpers.keyMapAlt = {}; 
 	_keysurfHelpers.takenAbbreviations = []; // maintains a list of all the user up letter / letter combos
+	_keysurfHelpers.takenAbbreviationsAlt = []; 
 
 	//these we use these to close website, go back and forth between tabs, etc.
 	_keysurfHelpers.reservedShortcuts = ['x', 'b', 'h', 'j', 'k', 'l'];
-	_keysurfHelpers.forbiddenDomains = ['gmail','google', 'facebook.com', 'twitter.com', 'w3schools.coms'];
+	_keysurfHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
+	_keysurfHelpers.forbiddenDomains = ['gmail','google', 'facebook.com', 'twitter.com', , 'notezilla.io', '0.0.0.0'];
+
+
+	_keysurfHelpers.specialCharactersPressed = function() {
+		// console.log('*****');
+		// console.log(_keysurfHelpers.ctrlPressed);
+		// console.log(_keysurfHelpers.shiftPressed);
+		// console.log(_keysurfHelpers.altPressed);
+		// console.log(_keysurfHelpers.cmdPressed);
+		return ((_keysurfHelpers.ctrlPressed) || (_keysurfHelpers.shiftPressed) || (_keysurfHelpers.altPressed) || (_keysurfHelpers.cmdPressed));
+	}
 
 	_keysurfHelpers.htmlDecode = function(str) {
 		var e = document.createElement('div');
@@ -21,87 +34,116 @@ var keysurfHelpers = (function() {
 		return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
 	}
 
-	_keysurfHelpers.analyzeAndModifyLink = function(linkObj) {
+	_keysurfHelpers.analyzeAndModifyLink = function(linkObj, alternative) {
 		// Figures out who the possible candiates are inside the link text, and maps them to their position in the innerHTML of that link.
+		// If alternative == true, then everything will be pushed to the 'backup' arrays used when user presses ALT key
 		var letterMappings = _keysurfHelpers.genereateLetterToHTMLMapping(linkObj); // contains the text() mapped to the underlying HTML
 		if (letterMappings.length == 0) {
 			// no available text inside link. Could be image. For now, do nothing.
+			return false; 
 		}
 		else {
 			var letterIndex = 0;
 			var chosenLetter = null; 
 			var chosenLetterOrigPos = null;
-			while (_keysurfHelpers.takenAbbreviations.containsString(letterMappings[letterIndex].processedLetter) && letterIndex < letterMappings.length - 1) {
+			while (getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter) && letterIndex < letterMappings.length - 1) {
 				letterIndex++;
 			}
-			if (!(_keysurfHelpers.takenAbbreviations.containsString(letterMappings[letterIndex].processedLetter))) {
+			if (!(getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter))) {
 
 				chosenLetter = letterMappings[letterIndex].processedLetter;
 				chosenLetterOrigPos = letterMappings[letterIndex].originalPosition;
-				_keysurfHelpers.takenAbbreviations.push(chosenLetter);
+				pushToTakenAbbreviations(chosenLetter, alternative);
 				var existingInnerHTML = linkObj.html();
 				var colorToUse = _keysurfHelpers.standardColor;
 				var deltaE = _keysurfHelpers.colorDistance(colorToUse,linkObj.css('color'));
-				console.log(deltaE);
 				if (deltaE < 50) {
-					console.log(deltaE);
 					colorToUse = _keysurfHelpers.alternativeColor;
 				}
 				if (_keysurfHelpers.hasBackgroundColorProperty(linkObj)) {
-					
 					var deltaE = _keysurfHelpers.colorDistance(_keysurfHelpers.standardColor,linkObj.css('background-color'));
 					if (deltaE < 50) {
-						console.log(3);
 						colorToUse = _keysurfHelpers.alternativeColor;
 					}
 				}
 				else {
 					// get all the background elements of the parents.
-					// console.log(4);
 					var parentWithBG = _keysurfHelpers.getFirstParentElementWithBGProperty(linkObj);
 					if (parentWithBG) {
-						// console.log(5);
 						var deltaE = _keysurfHelpers.colorDistance(_keysurfHelpers.standardColor,parentWithBG.css('background-color'));
 						if (deltaE < 50) {
-							console.log(6);
 							colorToUse = _keysurfHelpers.alternativeColor;
 						}
 					}
 				}
-				newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<keysurf style='color:"+colorToUse+"; font-weight:bold;'>"+linkObj.html()[chosenLetterOrigPos]+"</keysurf>");
+				if (alternative) {
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<keysurf data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+linkObj.html()[chosenLetterOrigPos]+"</keysurf>");
+				}
+				else {
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<keysurf data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+"; font-weight:bold;\">"+linkObj.html()[chosenLetterOrigPos]+"</keysurf>");
+				}
+				
 				linkObj.html(newInnerHTML);
-				_keysurfHelpers.keyMap[chosenLetter] = linkObj.prop('href');
+				setKeymapKeyValue(chosenLetter, linkObj.prop('href'), alternative);
+				return false;
+			}
+			else {
+				return true;
 			}
 		}
 	}
 
 	_keysurfHelpers.initializeSpecialKeyListeners = function() {
 
-		$(document).on("keydown", 'html', function(e) {
-			this.cmdPressed = (e.keyCode == 91 || e.keyCode == 93)
+		$(document).on("keydown keyup", function(e) {
+
+			_keysurfHelpers.cmdPressed = (e.keyCode == 91 || e.keyCode == 93);
+
 		});
-		$(document).on("keyup", 'html', function(e) {
-			this.cmdPressed = !(e.keyCode == 91 || e.keyCode == 93)
+		$(document).on("keyup keydown", function(e) {
+			_keysurfHelpers.shiftPressed = (e.keyCode == 16);
 		});
-		$(document).on("keyup keydown", 'html', function(e) {
-			this.shiftPressed = e.shiftKey;
+		$(document).on("keyup keydown", function(e) {
+			_keysurfHelpers.ctrlPressed = (e.keyCode == 17);
 		});
-		$(document).on("keyup keydown", 'html', function(e) {
-			this.ctrlPressed = e.ctrlKey;
+
+		$(document).on("keydown", function(e) {
+			if (e.keyCode == 18) {
+				_keysurfHelpers.altPressed = true;
+				$('keysurf.regular').each(function() {
+					var originalColor = $(this).attr('data-original-color');
+					var originalFontweight = $(this).attr('data-original-fontweight');
+					$(this).css('color', originalColor).css('font-weight', originalFontweight);
+				});
+				$('keysurf.alternative').each(function() {
+					var newColor = $(this).attr('data-modified-color');
+					$(this).css('color', newColor).css('font-weight', 'bold');
+				});
+			}
 		});
-		$(document).on("keyup keydown", 'html', function(e) {
-			this.altPressed = e.altKey;
+
+		$(document).on("keyup", function(e) {
+			if (e.keyCode == 18) {
+				_keysurfHelpers.altPressed = false;
+				$('keysurf.alternative').each(function() {
+					var originalColor = $(this).attr('data-original-color');
+					var originalFontweight = $(this).attr('data-original-fontweight');
+					$(this).css('color', originalColor).css('font-weight', originalFontweight);
+				});
+				$('keysurf.regular').each(function() {
+					var newColor = $(this).attr('data-modified-color');
+					$(this).css('color', newColor).css('font-weight', 'bold');
+				});
+			}
 		});
 
 	}
 
 	_keysurfHelpers.getFirstParentElementWithBGProperty = function(elem) {
 		var allParents = elem.parents();
-		// console.log(allParents);
 		var counter;
 		for (counter = 0; counter <= allParents.length - 1; counter++) {
 			if (_keysurfHelpers.hasBackgroundColorProperty($(allParents[counter]))) {
-				// console.log($(allParents[counter]));
 				return $(allParents[counter]);
 			}
 		}
@@ -116,8 +158,6 @@ var keysurfHelpers = (function() {
 	}
 
 	_keysurfHelpers.hasWhiteBackground = function(elem) {
-		// console.log((elem.css('background-color') == "rgb(0, 0, 0)") || (elem.css('background-color') == "rgba(0, 0, 0, 0)"));
-		// console.log(elem.css('background-color'));
 		return (elem.css('background-color').containsString("rgb(0, 0, 0)") || elem.css('background-color').containsString("rgba(0, 0, 0, 0)"));
 	}
 
@@ -287,6 +327,52 @@ var keysurfHelpers = (function() {
 		}
 		
 		return metaMiniMapping;
+	}
+
+	// A bunch of getters and setters in lieu of accessing variables by reference (which is not possible in Javascript)
+	function getTakenAbbreviations(alternative) {
+		if (alternative) {
+			return _keysurfHelpers.takenAbbreviationsAlt;		
+		}	
+		else {
+			return _keysurfHelpers.takenAbbreviations;		
+		}
+	}
+	function pushToTakenAbbreviations(chosenLetter, alternative) {
+		if (alternative) {
+			_keysurfHelpers.takenAbbreviationsAlt.push(chosenLetter);		
+		}	
+		else {
+			_keysurfHelpers.takenAbbreviations.push(chosenLetter);		
+		}
+	}
+
+	function setKeymapKeyValue(key, value, alternative) {
+		if (alternative) {
+			_keysurfHelpers.keyMapAlt[key] = value;
+		}
+		else {
+			_keysurfHelpers.keyMap[key] = value;
+		} 
+	}
+
+	_keysurfHelpers.getKeymap = function(alternative) {
+		if (alternative) {
+			return _keysurfHelpers.keyMapAlt;
+		}
+		else {
+			return _keysurfHelpers.keyMap;
+		} 
+	}
+
+
+	_keysurfHelpers.getKeymapValue = function(key, alternative) {
+		if (alternative) {
+			return _keysurfHelpers.keyMapAlt[key];
+		}
+		else {
+			return _keysurfHelpers.keyMap[key];
+		} 
 	}
 
 	return _keysurfHelpers;

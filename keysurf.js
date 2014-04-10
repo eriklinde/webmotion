@@ -1,9 +1,16 @@
+
+// WebMotion - A Chrome extension for simple, mouseless web browsing
+
 // TODO: Make it be able to process links with HTML-escaped characters, example: "TV & Media", or "Tag name: <input>". Currently disregarding these.
 // Make sure it works here: http://www.teslamotors.com/blog/when-life-gives-you-lemons
+// make sure that the only shortcut links that work for a "non working" domain are the h and l keys.
+// For already traveled link : use the traveled link color?
+
 (function () {
 	var timeouts = []; //contains the ID's of all setTimeouts.
 	
 	var modifiableLinks = []; // simply a collection of the current pages links
+	var modifiableLinksAlt = [];
 	var viewportHeight;
 
 	// here we will keep track of the two most recently pressed keypresses. Alphanumeric only.
@@ -21,7 +28,7 @@
 		});
 	});
 
-	$(document).on('keypress', 'html', function(e) {
+	$(document).on('keydown', 'html', function(e) {
 		var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
 		if (keysurfHelpers.isAlphanumeric(pressedChar)) {
 			handleAlphaNumericKeyPress(pressedChar);
@@ -32,23 +39,33 @@
 		// Check to make sure we are not on Google, Facebook, Twitter, etc. They have their own shortcut system.
 		if (keysurfHelpers.isDomainAllowed()) {
 			modifiableLinks = [];
+			modifiableLinksAlt = [];
 			keysurfHelpers.takenAbbreviations = [];
+			keysurfHelpers.takenAbbreviationsAlt = [];
 			resetAllLinks();
 			// Gather all the links we (potentially) need to modify
 			modifiableLinks = gatherLegitimateLinks();
 			modifiableLinks = sortLinkSetByFontSize(modifiableLinks);
 
-			
 			// process each link (ie, figure out which letter to be the shortcut, alter the underlying html, etc)
-			for (i=0; i <= modifiableLinks.length - 1; i++) {
-				keysurfHelpers.analyzeAndModifyLink(modifiableLinks[i].linkObj);
+			
+			for (var i=0; i <= modifiableLinks.length - 1; i++) {
+				var reprocessForAltKey = keysurfHelpers.analyzeAndModifyLink(modifiableLinks[i].linkObj, false);
+				if (reprocessForAltKey) {
+					modifiableLinksAlt.push(modifiableLinks[i]);
+				}
+			}
+
+			for (var i=0; i <= modifiableLinksAlt.length - 1; i++) {
+				var reprocessForAltKey = keysurfHelpers.analyzeAndModifyLink(modifiableLinksAlt[i].linkObj, true);
 			}
 		}
 	}
 
-	function handleAlphaNumericKeyPress(pressedChar) {		
+	function handleAlphaNumericKeyPress(pressedChar) {
 		if (keysurfHelpers.noInputFieldsActive()) {
-			if (keysurfHelpers.reservedShortcuts.containsString(pressedChar)) {
+			// alert(keysurfHelpers.specialCharactersPressed());
+			if (keysurfHelpers.reservedShortcuts.containsString(pressedChar) && (keysurfHelpers.isDomainAllowed() || keysurfHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) && !(keysurfHelpers.specialCharactersPressed())) {
 				// user pressed one of the 'reserved keys', example hjkl
 				switch(pressedChar)
 				{	
@@ -77,7 +94,7 @@
 					break;
 				}
 			}	
-			else if (keysurfHelpers.isDomainAllowed()) {
+			else if (keysurfHelpers.isDomainAllowed() && keysurfHelpers.getKeymap(keysurfHelpers.altPressed)[pressedChar] != null && (!(keysurfHelpers.specialCharactersPressed()) || keysurfHelpers.altPressed)) {
 				// user pressed 'red' key (ie not one of the reserved keys)
 				// first push the key to the keylog
 				resetAllTimeOuts();
@@ -91,19 +108,17 @@
 					
 					var timeOutID = window.setTimeout(function(localChar) {
 						resetKeyPresses();
-						window.location = keysurfHelpers.keyMap[localChar];	
+						window.location = keysurfHelpers.getKeymapValue(localChar, keysurfHelpers.altPressed);	
 					}, 300, pressedChar);
 					keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 				}
 				else if ((keyPresses[keyPresses.length - 1].character == keyPresses[keyPresses.length - 2].character) && (keyPresses[keyPresses.length - 2].character != keyPresses[keyPresses.length - 3].character)) {
-					
-					
 					if (keyPresses[keyPresses.length - 1].timeStamp - keyPresses[keyPresses.length - 2].timeStamp < 300) {
 						// set new timeout to go to link in NEW tab, and wait 500 ms before executing (waiting for third click.)
 						var timeOutID = window.setTimeout(function(localChar) {
 							// open in new tab, and follow
 							resetKeyPresses();
-							chrome.runtime.sendMessage({msg: 'new_tab_follow', url: keysurfHelpers.keyMap[pressedChar]}, function(response) {});
+							chrome.runtime.sendMessage({msg: 'new_tab_follow', url: keysurfHelpers.getKeymapValue(pressedChar, keysurfHelpers.altPressed)}, function(response) {});
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
@@ -112,7 +127,7 @@
 						// set timeout to follow link in THIS tab.
 						var timeOutID = window.setTimeout(function(localChar) {
 							resetKeyPresses();
-							window.location = keysurfHelpers.keyMap[localChar];
+							window.location = keysurfHelpers.getKeymapValue(localChar, keysurfHelpers.altPressed);
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
@@ -123,14 +138,14 @@
 						// clear keypresses + open up in new tab (don't follow tab)
 						// no timer necessary
 						resetKeyPresses();	
-						chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: keysurfHelpers.keyMap[pressedChar]}, function(response) {});
+						chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: keysurfHelpers.getKeymapValue(pressedChar, keysurfHelpers.altPressed)}, function(response) {});
 					}
 					else {
 						//consider this identical to the first one, ie consider the keys separate despite they were the same
 						// set timeout to follow link in THIS tab.
 						var timeOutID = window.setTimeout(function(localChar) {
 							resetKeyPresses();
-							window.location = keysurfHelpers.keyMap[localChar];
+							window.location = keysurfHelpers.getKeymapValue(localChar, keysurfHelpers.altPressed);
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
@@ -187,11 +202,13 @@
 
 	function initializeWindowScrollListener() {
 		$(window).scroll(function() {
+			console.log(1);
 			clearTimeout($.data(this, 'scrollTimer'));
 			$.data(this, 'scrollTimer', setTimeout(function() {
         		// do something
+        		console.log(2);
         		processLinks();
-        	}, 50));
+        	}, 70));
 		});
 	}
 
