@@ -28,6 +28,11 @@ var webMotionHelpers = (function() {
 		return ((_webMotionHelpers.ctrlPressed) || (_webMotionHelpers.shiftPressed) || (_webMotionHelpers.altPressed) || (_webMotionHelpers.cmdPressed));
 	}
 
+
+	_webMotionHelpers.areRegularsHighlighted = function() {
+		return ($('webmotion.regular').size() > 0 && $('webmotion.regular').first().attr('data-active') == 'true');
+	}
+
 	_webMotionHelpers.htmlDecode = function(str) {
 		var e = document.createElement('div');
 		e.innerHTML = str;
@@ -110,10 +115,10 @@ var webMotionHelpers = (function() {
 
 
 				if (alternative) {
-					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+newLetter+"</webmotion>");
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-active='false' data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+newLetter+"</webmotion>");
 				}
 				else {
-					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+";font-weight:bold;\">"+newLetter+"</webmotion>");
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-active='true' data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+";font-weight:bold;\">"+newLetter+"</webmotion>");
 				}
 				
 				linkObj.html(newInnerHTML);
@@ -143,30 +148,41 @@ var webMotionHelpers = (function() {
 		$(document).on("keydown", function(e) {
 			if (e.keyCode == 18) {
 				_webMotionHelpers.altPressed = true;
-				$('webmotion.regular').each(function() {
-					var originalColor = $(this).attr('data-original-color');
-					var originalFontweight = $(this).attr('data-original-fontweight');
-					$(this).css('color', originalColor).css('font-weight', originalFontweight);
-				});
-				$('webmotion.alternative').each(function() {
-					var newColor = $(this).attr('data-modified-color');
-					$(this).css('color', newColor).css('font-weight', 'bold');
-				});
+				
+				if (_webMotionHelpers.areRegularsHighlighted()) {
+					// highlight the alternatives
+					$('webmotion.regular').each(function() {
+						var originalColor = $(this).attr('data-original-color');
+						var originalFontweight = $(this).attr('data-original-fontweight');
+						$(this).css('color', originalColor).css('font-weight', originalFontweight);
+						$(this).attr('data-active','false');
+					});
+					$('webmotion.alternative').each(function() {
+						var newColor = $(this).attr('data-modified-color');
+						$(this).css('color', newColor).css('font-weight', 'bold');
+						$(this).attr('data-active','true');
+					});
+				}
+				else {
+					//highlight the regulars
+					$('webmotion.alternative').each(function() {
+						var originalColor = $(this).attr('data-original-color');
+						var originalFontweight = $(this).attr('data-original-fontweight');
+						$(this).css('color', originalColor).css('font-weight', originalFontweight);
+						$(this).attr('data-active','false');
+					});
+					$('webmotion.regular').each(function() {
+						var newColor = $(this).attr('data-modified-color');
+						$(this).css('color', newColor).css('font-weight', 'bold');
+						$(this).attr('data-active','true');
+					});
+				}
 			}
 		});
 
 		$(document).on("keyup", function(e) {
 			if (e.keyCode == 18) {
 				_webMotionHelpers.altPressed = false;
-				$('webmotion.alternative').each(function() {
-					var originalColor = $(this).attr('data-original-color');
-					var originalFontweight = $(this).attr('data-original-fontweight');
-					$(this).css('color', originalColor).css('font-weight', originalFontweight);
-				});
-				$('webmotion.regular').each(function() {
-					var newColor = $(this).attr('data-modified-color');
-					$(this).css('color', newColor).css('font-weight', 'bold');
-				});
 			}
 		});
 

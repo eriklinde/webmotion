@@ -115,7 +115,7 @@
 					break;
 				}
 			}	
-			else if (webMotionHelpers.isDomainAllowed() && webMotionHelpers.getKeymap(webMotionHelpers.altPressed)[pressedChar] != null && (!(webMotionHelpers.specialCharactersPressed()) || webMotionHelpers.altPressed)) {
+			else if (webMotionHelpers.isDomainAllowed() && webMotionHelpers.getKeymap(!(webMotionHelpers.areRegularsHighlighted()))[pressedChar] != null && (!(webMotionHelpers.specialCharactersPressed()))) {
 				// user pressed 'red' key (ie not one of the reserved keys)
 				// first push the key to the keylog
 				resetAllTimeOuts();
@@ -129,7 +129,7 @@
 					
 					var timeOutID = window.setTimeout(function(localChar) {
 						resetKeyPresses();
-						window.location = webMotionHelpers.getKeymapValue(localChar, webMotionHelpers.altPressed);	
+						window.location = webMotionHelpers.getKeymapValue(localChar, !(webMotionHelpers.areRegularsHighlighted()));	
 					}, 300, pressedChar);
 					keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 				}
@@ -139,7 +139,7 @@
 						var timeOutID = window.setTimeout(function(localChar) {
 							// open in new tab, and follow
 							resetKeyPresses();
-							chrome.runtime.sendMessage({msg: 'new_tab_follow', url: webMotionHelpers.getKeymapValue(pressedChar, webMotionHelpers.altPressed)}, function(response) {});
+							chrome.runtime.sendMessage({msg: 'new_tab_follow', url: webMotionHelpers.getKeymapValue(pressedChar, !(webMotionHelpers.areRegularsHighlighted()))}, function(response) {});
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
@@ -148,7 +148,7 @@
 						// set timeout to follow link in THIS tab.
 						var timeOutID = window.setTimeout(function(localChar) {
 							resetKeyPresses();
-							window.location = webMotionHelpers.getKeymapValue(localChar, webMotionHelpers.altPressed);
+							window.location = webMotionHelpers.getKeymapValue(localChar, !(webMotionHelpers.areRegularsHighlighted()));
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
@@ -159,14 +159,14 @@
 						// clear keypresses + open up in new tab (don't follow tab)
 						// no timer necessary
 						resetKeyPresses();	
-						chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: webMotionHelpers.getKeymapValue(pressedChar, webMotionHelpers.altPressed)}, function(response) {});
+						chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: webMotionHelpers.getKeymapValue(pressedChar, !(webMotionHelpers.areRegularsHighlighted()))}, function(response) {});
 					}
 					else {
 						//consider this identical to the first one, ie consider the keys separate despite they were the same
 						// set timeout to follow link in THIS tab.
 						var timeOutID = window.setTimeout(function(localChar) {
 							resetKeyPresses();
-							window.location = webMotionHelpers.getKeymapValue(localChar, webMotionHelpers.altPressed);
+							window.location = webMotionHelpers.getKeymapValue(localChar, !(webMotionHelpers.areRegularsHighlighted()));
 						}, 300, pressedChar);
 						keyPresses[keyPresses.length - 1].timeOutID = timeOutID;
 					}
