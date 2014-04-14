@@ -16,7 +16,7 @@ var webMotionHelpers = (function() {
 	//these we use these to close website, go back and forth between tabs, etc.
 	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'h', 'j', 'k', 'l'];
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
-	_webMotionHelpers.forbiddenDomains = ['gmail','google', 'facebook.com', 'twitter.com', , 'notezilla.io', '0.0.0.0'];
+	_webMotionHelpers.forbiddenDomains = ['gmail','google', 'facebook.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
 
 
 	_webMotionHelpers.specialCharactersPressed = function() {
