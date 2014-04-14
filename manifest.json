@@ -29,7 +29,7 @@
           },
 
           "content_scripts": [ {
-            "js": [ "jQuery.js", "jQuery.scrollTo.js", "webMotionHelpers.js", "iColor.js", "webMotion.js" ],
+            "js": [ "jQuery.js", "jQueryEasing.js", "jQuery.scrollTo.js", "webMotionHelpers.js", "iColor.js", "webMotion.js" ],
             "matches": [ "http://*/*", "https://*/*"], 
             "exclude_globs": ["*google.com*"]
             }]

@@ -46,10 +46,10 @@ var webMotionHelpers = (function() {
 			var letterIndex = 0;
 			var chosenLetter = null; 
 			var chosenLetterOrigPos = null;
-			while (getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter) && letterIndex < letterMappings.length - 1) {
+			while ((getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.reservedShortcuts.containsString(letterMappings[letterIndex].processedLetter)) && letterIndex < letterMappings.length - 1) {
 				letterIndex++;
 			}
-			if (!(getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter))) {
+			if (!(getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter)) && !(_webMotionHelpers.reservedShortcuts.containsString(letterMappings[letterIndex].processedLetter))) {
 
 				chosenLetter = letterMappings[letterIndex].processedLetter;
 				chosenLetterOrigPos = letterMappings[letterIndex].originalPosition;
@@ -60,6 +60,10 @@ var webMotionHelpers = (function() {
 				if (deltaE < 50) {
 					colorToUse = _webMotionHelpers.alternativeColor;
 				}
+
+				
+				
+
 				if (_webMotionHelpers.hasBackgroundColorProperty(linkObj)) {
 					var deltaE = _webMotionHelpers.colorDistance(_webMotionHelpers.standardColor,linkObj.css('background-color'));
 					if (deltaE < 50) {
@@ -76,11 +80,40 @@ var webMotionHelpers = (function() {
 						}
 					}
 				}
+				var newLetter = linkObj.html()[chosenLetterOrigPos];
+
+				// Deal with text-transform: capitalize here (if present)
+				//the rationale is that if the text capitalizes
+				// and we insert a tag, that tag will inherit from capitalize. And thus could result in MEntors, for example as
+				// on the tech stars page. We'll change the capitalize on the host link to 'none' and then instead just capitalize the first
+				// letter.
+				if (linkObj.css('text-transform') == 'capitalize') {
+					// First remove 'capitalize' from the link (otherwise, our tag will be capitalized as well)
+					linkObj.css('text-transform', 'none');
+					var firstLetter = existingInnerHTML[letterMappings[0].originalPosition]; 
+					// then manually capitalize the first letter of the link and insert it. It's not perfect, but good enough.
+					// (it misses all subsequent words where letters should be capitalized, but I think this is still better)
+					// than having the result be something like MEntors.
+					var newFirstLetter = firstLetter.toUpperCase();
+					existingInnerHTML.replaceAt(letterMappings[0].originalPosition, newFirstLetter);
+					// then, if the chosen letter is also the first one in the first word, be sure to capitalize it.
+					if (chosenLetterOrigPos == 0) {
+						// known bug: if the letter is enclosed in an HTML tag such as span, chosenLetterOrigPos will
+						// not equal 0. So there is a microsmall chance that the following will happen:
+						// 1) capitalize will be present in the link
+						// 2) enclosed in a tag, so that chosenLetterOrigPos > 0.
+						// 3) Letter isn't already uppercased because the author assumed it would be automatically uppercased
+						// by the CSS.
+						newLetter = newLetter.toUpperCase();
+					}
+				} 
+
+
 				if (alternative) {
-					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+linkObj.html()[chosenLetterOrigPos]+"</webmotion>");
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+newLetter+"</webmotion>");
 				}
 				else {
-					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+"; font-weight:bold;\">"+linkObj.html()[chosenLetterOrigPos]+"</webmotion>");
+					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+";font-weight:bold;\">"+newLetter+"</webmotion>");
 				}
 				
 				linkObj.html(newInnerHTML);
@@ -231,9 +264,9 @@ var webMotionHelpers = (function() {
 			sign = '-';
 		}
 		
-		$.scrollTo(sign + '=' + Math.abs(px) + 'px', 150, {
+		$.scrollTo(sign + '=' + Math.abs(px) + 'px', 250, {
 			axis: 'y',
-			easing: 'swing',
+			easing: 'easeInOutCubic',
 			onAfter: function() {
 				//Do we need to change the hash?
 			}
@@ -313,7 +346,11 @@ var webMotionHelpers = (function() {
 				for (var j = startPos; j <= startPos + nodesContainer[i].txt.length - 1; j++) {
 					var currentLetter = nodesContainer[i].html[j].toLowerCase();
 					// We only want the letter if it's alpha numeric and if we haven't already seen it, and if it's not a reserved shortcut.
-					if (this.isAlphanumeric(currentLetter) && !(this.reservedShortcuts.containsString(currentLetter)) && !(uniqueLettersInNodes.containsString(currentLetter))) {
+					// NOTE: WE ACTUALLY DO WANT THE LETTERS EVEN IF IT'S A RESERVED SHORTCUT. SO COMMENTING OUT 
+					// THAT AND REPLACING SO THIS HAPPENS. WE WANT THIS BECAUSE OF FOR A WORD LIKE "back", IF CAPITALIZE IS PRESENT
+					// WE WANT TO BE ABLE TO CAPITALIZE THE FIRST WORD IF NEEDED. THUS WE MUST KNOW ABOUT IT.
+					// if (this.isAlphanumeric(currentLetter) && !(this.reservedShortcuts.containsString(currentLetter)) && !(
+					if (this.isAlphanumeric(currentLetter) && !(uniqueLettersInNodes.containsString(currentLetter))) {
 						miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});				
 						uniqueLettersInNodes.push(currentLetter);
 					}

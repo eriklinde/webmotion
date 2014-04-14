@@ -10,7 +10,7 @@
 // langst ner: pilen gor att det inte funkar: http://donmelton.com/2014/04/10/memories-of-steve/
 // for google, kanske ta bort fokus från html och lägga någon annanstans så att man kan navigera?
 
-// http://www.techstars.com/ why is letters being capitlized
+
 // "add current domain to blocked sites"
 // missar första keypress på de flesta sidor, eller?
 
@@ -19,11 +19,10 @@
 // ampersand http://www.gogreenlights.co.uk/moreinfo.html
 // alt knappen ska växla, ej behöva hålla ner
 // mät även om länkarna är synliga i sidled
-// scrolla smoothare
 // customiza färgen
 // installningar att underline, bold, färg...
 // w går av / på för alla sidor. 
-// Först o främst hitta tangenter i närheten av HJKL
+
 // kanske enbart det översta text input field måste highlightas
 // textfield boxes (just do the first one)
 // detect facebook box.
