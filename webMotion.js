@@ -17,7 +17,7 @@
 // vill den ska funka på Gmail.
 // customize vilka tangenter som ska ha vilken konfiguration. Piltangenterna ska oxå funka.
 // ampersand http://www.gogreenlights.co.uk/moreinfo.html
-// alt knappen ska växla, ej behöva hålla ner
+
 // mät även om länkarna är synliga i sidled
 // customiza färgen
 // installningar att underline, bold, färg...
@@ -43,8 +43,9 @@
 	initializeWindowScrollListener();
 	
 	$(document).ready(function() {
-		chrome.runtime.sendMessage({msg: 'get_viewport_height'}, function(response) {
-			webMotionHelpers.viewPortHeight = response;
+		chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
+			webMotionHelpers.viewPortHeight = response.height;
+			webMotionHelpers.viewPortWidth = response.width;
 			processLinks();
 		});
 	});

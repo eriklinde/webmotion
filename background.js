@@ -50,7 +50,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			});
 		});
 	}
-	else if (request.msg == 'get_viewport_height') {
-		sendResponse(sender.tab.height);
+	else if (request.msg == 'get_viewport_dimensions') {
+		sendResponse({height: sender.tab.height, width: sender.tab.width});
 	}
 });

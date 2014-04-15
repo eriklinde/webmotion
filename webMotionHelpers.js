@@ -8,6 +8,7 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.standardColor = '#e84c3d';
 	_webMotionHelpers.alternativeColor = '#5280bb';
 	_webMotionHelpers.viewPortHeight;
+	_webMotionHelpers.viewPortWidth;
 	_webMotionHelpers.keyMap = {}; // maps the keys to the URLs
 	_webMotionHelpers.keyMapAlt = {}; 
 	_webMotionHelpers.takenAbbreviations = []; // maintains a list of all the user up letter / letter combos
@@ -259,9 +260,17 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.isElementInView = function(elem) {
 		var docViewTop = $(window).scrollTop();
 		var docViewBottom = docViewTop + this.viewPortHeight;
+		
+		var docViewLeft = $(window).scrollLeft();
+		var docViewRight = docViewLeft + this.viewPortWidth;
+
 		var elemTop = $(elem).offset().top;
 		var elemBottom = elemTop + $(elem).height();
-		return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
+		
+		var elemLeft = $(elem).offset().left;
+		var elemRight = elemLeft + $(elem).width();
+
+		return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop) && (elemLeft >= docViewLeft) && (elemRight <= docViewRight));
 	}
 
 	_webMotionHelpers.isAlphanumeric = function(str) {
