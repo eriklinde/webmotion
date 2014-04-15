@@ -1,6 +1,3 @@
-// holds a collection of all the tabs we spawn so that we can keep track of their parents.
-// var spawnedTabs = new Object;
-
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	// var response = null;
@@ -53,6 +50,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 	else if (request.msg == 'get_viewport_dimensions') {
 		// chrome.browserAction.setIcon({path:"icon38_bw.png", tabId:sender.tab.id});
+		// alert(_webMotionHelpers);
 		sendResponse({height: sender.tab.height, width: sender.tab.width});
 	}
 	else if (request.msg == 'update_all_icons') {

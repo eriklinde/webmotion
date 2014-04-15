@@ -14,6 +14,9 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.takenAbbreviations = []; // maintains a list of all the user up letter / letter combos
 	_webMotionHelpers.takenAbbreviationsAlt = []; 
 
+	// here we will keep track of the two most recently pressed keypresses. Alphanumeric only.
+	_webMotionHelpers.keyPresses = [{character: 'dummy1', timeStamp: 100000, timeOutID: null},{character: 'dummy2', timeStamp: 200000, timeOutID: null},{character: 'dummy3', timeStamp: 300000, timeOutID: null}];
+
 	//these we use these to close website, go back and forth between tabs, etc.
 	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'h', 'j', 'k', 'l'];
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
@@ -27,6 +30,12 @@ var webMotionHelpers = (function() {
 		// console.log(_webMotionHelpers.altPressed);
 		// console.log(_webMotionHelpers.cmdPressed);
 		return ((_webMotionHelpers.ctrlPressed) || (_webMotionHelpers.shiftPressed) || (_webMotionHelpers.altPressed) || (_webMotionHelpers.cmdPressed));
+	}
+
+	_webMotionHelpers.resetKeyPresses = function () {
+		// removes everything except the first 3 dummy elements.
+		// never reset keypresses without resetting timeouts first
+		_webMotionHelpers.keyPresses.splice(3);
 	}
 
 
@@ -132,7 +141,124 @@ var webMotionHelpers = (function() {
 		}
 	}
 
+	_webMotionHelpers.initializeAlphaNumericKeyListeners = function() {
+		$(document).on('keydown', 'html', function(e) {
+			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
+			if (_webMotionHelpers.isAlphanumeric(pressedChar)) {
+				_webMotionHelpers.handleAlphaNumericKeyPress(pressedChar);
+			}
+		});
+	}
+
+	_webMotionHelpers.resetAllTimeOuts = function() {
+		// never reset keypresses without resetting timeouts first
+		for (var i = 0; i <= _webMotionHelpers.keyPresses.length - 1; i++) {
+			if (_webMotionHelpers.keyPresses[i].timeOutID != null) {
+				clearTimeout(_webMotionHelpers.keyPresses[i].timeOutID);
+				_webMotionHelpers.keyPresses[i].timeOutID = null;
+			}
+		}					
+	}
+
+	_webMotionHelpers.resetAllLinks = function() {
+		$('webmotion').each(function(index, value) {
+			$(this).replaceWith($(this).text());		
+		});
+	}
+
+	_webMotionHelpers.handleAlphaNumericKeyPress = function(pressedChar) {
+		if (_webMotionHelpers.noInputFieldsActive()) {
+			// alert(webMotionHelpers.specialCharactersPressed());
+			if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && (_webMotionHelpers.isDomainAllowed() || _webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) && !(_webMotionHelpers.specialCharactersPressed())) {
+				// user pressed one of the 'reserved keys', example hjkl
+				switch(pressedChar)
+				{	
+					case 'x':
+					chrome.runtime.sendMessage({msg: 'close_selected_tab'}, function(response) {});
+					break;
+					case 'j':
+					_webMotionHelpers.scrollWindow(300);
+					break;
+					case 'k':
+					_webMotionHelpers.scrollWindow(-300);
+					break;
+					case 'b':
+					window.history.go(-1);
+					break;
+					// case 'f':
+					// window.history.go(+1);
+					// break;
+					case 'h':
+					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
+					break;
+					case 'l':
+					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'right'}, function(response) {});
+					break;
+					default:
+					break;
+				}
+			}	
+			else if (_webMotionHelpers.isDomainAllowed() && _webMotionHelpers.getKeymap(!(_webMotionHelpers.areRegularsHighlighted()))[pressedChar] != null && (!(_webMotionHelpers.specialCharactersPressed()))) {
+				// user pressed 'red' key (ie not one of the reserved keys)
+				// first push the key to the keylog
+				_webMotionHelpers.resetAllTimeOuts();
+				_webMotionHelpers.keyPresses.push({character: pressedChar, timeStamp: Date.now(), timeOutID: null});
+				if (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].character != _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character) {
+					// "new" character was pressed
+					// first reset all timeouts. For example if we press w w and then e, we don't really care what happened
+					// previously. It should already have been executed (true?)
+					// Then set a timeout (and push the timeoutID to the timeouts array); if timeout passes without 
+					// interference, cancel all timeouts and go to link in current window
+					
+					var timeOutID = window.setTimeout(function(localChar) {
+						_webMotionHelpers.resetKeyPresses();
+						window.location = _webMotionHelpers.getKeymapValue(localChar, !(_webMotionHelpers.areRegularsHighlighted()));	
+					}, 300, pressedChar);
+					_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
+				}
+				else if ((_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character) && (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character != _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 3].character)) {
+					if (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeStamp - _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].timeStamp < 300) {
+						// set new timeout to go to link in NEW tab, and wait 500 ms before executing (waiting for third click.)
+						var timeOutID = window.setTimeout(function(localChar) {
+							// open in new tab, and follow
+							_webMotionHelpers.resetKeyPresses();
+							chrome.runtime.sendMessage({msg: 'new_tab_follow', url: _webMotionHelpers.getKeymapValue(pressedChar, !(_webMotionHelpers.areRegularsHighlighted()))}, function(response) {});
+						}, 300, pressedChar);
+						_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
+					}
+					else {
+						//consider this identical to the first one, ie consider the keys separate despite they were the same
+						// set timeout to follow link in THIS tab.
+						var timeOutID = window.setTimeout(function(localChar) {
+							_webMotionHelpers.resetKeyPresses();
+							window.location = _webMotionHelpers.getKeymapValue(localChar, !(_webMotionHelpers.areRegularsHighlighted()));
+						}, 300, pressedChar);
+						_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
+					}
+				}
+				else if ((_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character) && (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 3].character)) {					
+					if (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeStamp - _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].timeStamp < 300) {
+						//note that this 500 + the previosu 500 must add up to 1000?
+						// clear keypresses + open up in new tab (don't follow tab)
+						// no timer necessary
+						_webMotionHelpers.resetKeyPresses();	
+						chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: _webMotionHelpers.getKeymapValue(pressedChar, !(_webMotionHelpers.areRegularsHighlighted()))}, function(response) {});
+					}
+					else {
+						//consider this identical to the first one, ie consider the keys separate despite they were the same
+						// set timeout to follow link in THIS tab.
+						var timeOutID = window.setTimeout(function(localChar) {
+							_webMotionHelpers.resetKeyPresses();
+							window.location = _webMotionHelpers.getKeymapValue(localChar, !(_webMotionHelpers.areRegularsHighlighted()));
+						}, 300, pressedChar);
+						_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
+					}
+				}
+			}							
+		} 
+	}
 	_webMotionHelpers.initializeSpecialKeyListeners = function() {
+		// x
 
 		$(document).on("keydown keyup", function(e) {
 
@@ -149,7 +275,7 @@ var webMotionHelpers = (function() {
 		$(document).on("keydown", function(e) {
 			if (e.keyCode == 18) {
 				_webMotionHelpers.altPressed = true;
-				
+
 				if (_webMotionHelpers.areRegularsHighlighted()) {
 					// highlight the alternatives
 					$('webmotion.regular').each(function() {
@@ -181,26 +307,26 @@ var webMotionHelpers = (function() {
 			}
 		});
 
-		$(document).on("keyup", function(e) {
-			if (e.keyCode == 18) {
-				_webMotionHelpers.altPressed = false;
-			}
-		});
-
+$(document).on("keyup", function(e) {
+	if (e.keyCode == 18) {
+		_webMotionHelpers.altPressed = false;
 	}
+});
 
-	_webMotionHelpers.getFirstParentElementWithBGProperty = function(elem) {
-		var allParents = elem.parents();
-		var counter;
-		for (counter = 0; counter <= allParents.length - 1; counter++) {
-			if (_webMotionHelpers.hasBackgroundColorProperty($(allParents[counter]))) {
-				return $(allParents[counter]);
-			}
+}
+
+_webMotionHelpers.getFirstParentElementWithBGProperty = function(elem) {
+	var allParents = elem.parents();
+	var counter;
+	for (counter = 0; counter <= allParents.length - 1; counter++) {
+		if (_webMotionHelpers.hasBackgroundColorProperty($(allParents[counter]))) {
+			return $(allParents[counter]);
 		}
-		return false;
-	}	
+	}
+	return false;
+}	
 
-	_webMotionHelpers.hasBackgroundColorProperty = function(elem) {
+_webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		// if we do this the traditional elem.css('background-color')
 		// way, seems we are getting rgb(0,0,0) as a response even if it's 
 		// not set.
@@ -375,11 +501,11 @@ var webMotionHelpers = (function() {
 					// THAT AND REPLACING SO THIS HAPPENS. WE WANT THIS BECAUSE OF FOR A WORD LIKE "back", IF CAPITALIZE IS PRESENT
 					// WE WANT TO BE ABLE TO CAPITALIZE THE FIRST WORD IF NEEDED. THUS WE MUST KNOW ABOUT IT.
 					// if (this.isAlphanumeric(currentLetter) && !(this.reservedShortcuts.containsString(currentLetter)) && !(
-					if (this.isAlphanumeric(currentLetter) && !(uniqueLettersInNodes.containsString(currentLetter))) {
-						miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});				
-						uniqueLettersInNodes.push(currentLetter);
+						if (this.isAlphanumeric(currentLetter) && !(uniqueLettersInNodes.containsString(currentLetter))) {
+							miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});				
+							uniqueLettersInNodes.push(currentLetter);
+						}
 					}
-				}
 				// we only want to deal with stuff where there is no ambiguity. Ie we don't want to 
 				// go down the rabbithole of something like <span>pan</span>, etc...
 				// However, <span>Pan</span> should be fine. Which will be the case with the above code as well, as it is case-sensivite.
