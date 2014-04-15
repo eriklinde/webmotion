@@ -18,10 +18,9 @@
 // customize vilka tangenter som ska ha vilken konfiguration. Piltangenterna ska oxå funka.
 // ampersand http://www.gogreenlights.co.uk/moreinfo.html
 
-// mät även om länkarna är synliga i sidled
 // customiza färgen
 // installningar att underline, bold, färg...
-// w går av / på för alla sidor. 
+// w går av / på för alla sidor.
 
 // kanske enbart det översta text input field måste highlightas
 // textfield boxes (just do the first one)
@@ -38,15 +37,22 @@
 	var keyPresses = [{character: 'dummy1', timeStamp: 100000, timeOutID: null},{character: 'dummy2', timeStamp: 200000, timeOutID: null},{character: 'dummy3', timeStamp: 300000, timeOutID: null}];
 
 	// Initializes certain listeners needed
-	webMotionHelpers.initializeSpecialKeyListeners();
-	webMotionHelpers.initializeFocusBlurListeners();
-	initializeWindowScrollListener();
 	
 	$(document).ready(function() {
-		chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
-			webMotionHelpers.viewPortHeight = response.height;
-			webMotionHelpers.viewPortWidth = response.width;
-			processLinks();
+		chrome.storage.local.get(function(response) {
+			if (response.active) {
+				webMotionHelpers.initializeSpecialKeyListeners();
+				webMotionHelpers.initializeFocusBlurListeners();
+				initializeWindowScrollListener();
+				chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
+					webMotionHelpers.viewPortHeight = response.height;
+					webMotionHelpers.viewPortWidth = response.width;
+					processLinks();
+				});
+			}
+			else {
+				chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
+			}
 		});
 	});
 

@@ -1,6 +1,7 @@
 // holds a collection of all the tabs we spawn so that we can keep track of their parents.
 // var spawnedTabs = new Object;
 
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	// var response = null;
 	if (request.msg == 'new_tab_follow') {
@@ -51,6 +52,25 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		});
 	}
 	else if (request.msg == 'get_viewport_dimensions') {
+		// chrome.browserAction.setIcon({path:"icon38_bw.png", tabId:sender.tab.id});
 		sendResponse({height: sender.tab.height, width: sender.tab.width});
 	}
+	else if (request.msg == 'update_all_icons') {
+		// updates color for all icons in every tab
+				chrome.windows.getAll({populate: true}, function(windowCollection) {
+			for(var i = 0; i <= windowCollection.length - 1; i++) {
+				for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
+					if (request.active) {
+						//set to 'active', ie colored version
+						chrome.browserAction.setIcon({path:"icon38.png", tabId:windowCollection[i].tabs[j].id});
+					}
+					else {
+						// set to black and white version (inactive)
+						chrome.browserAction.setIcon({path:"icon38_bw.png", tabId:windowCollection[i].tabs[j].id});
+					}				
+				}
+			}
+		});
+	}
 });
+

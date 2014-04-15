@@ -1,30 +1,65 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Getting Started Extension's Popup</title>
-    <style>
-      body {
-        min-width: 357px;
-        overflow-x: hidden;
-      }
+<head>
+  <link rel="stylesheet" type="text/css" href="popup.css" />
+  <title>Getting Started Extension's Popup</title>
+  <script src="jQuery.js"></script>
+  <script src="popup.js"></script>
+</head>
 
-      img {
-        margin: 5px;
-        border: 2px solid black;
-        vertical-align: middle;
-        width: 75px;
-        height: 75px;
-      }
-    </style>
+<body>
+  <table>
+    
+    <tr>
+      <td style='text-align:center;' colspan="2"><img style='width:50px' src='popup_top_image.png'></img></td>
+    </tr>    
 
-    <!--
-      - JavaScript and HTML must be in separate files: see our Content Security
-      - Policy documentation[1] for details and explanation.
-      -
-      - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
-     -->
-  </head>
-  <body>
-  </body>
+    <tr >
+      <td id='on-off-statement' style='margin-top:-40px'>WebMotion is currently <b></b></td>
+      <td style='width:20px; margin-top:-40px'><div class='js-checkbox'></div></td>
+    </tr>
+
+    <tr>
+      <td colspan="2"><hr></td>
+    </tr>
+    <tr>
+      <td colspan="2">Not working correctly on this site? Disable WebMotion on:</td>
+      
+    </tr>
+    
+    <tr>
+      <td colspan="2"><div class='button'>google.com</div></td>
+    </tr>
+
+    <tr>
+      <td colspan="2" style='padding-top:0'><div class='button'>google.com/eail/links/rfewf.html</div></td>
+    </tr>
+
+    <tr>
+      <td colspan="2"><hr></td>
+    </tr>
+
+  </table>
+
+  <table style='margin-bottom:10px;'>
+    <tr>
+      <td><a href='http://www.webmotion.info'>More settings</a></td>
+      <td style='text-align:right'><a href='http://www.webmotion.info'>About information</a></td>
+    </tr>
+    <tr>
+      
+      <td colspan="2" style='text-align:right; font-size:11px;'>Created by <a style='text-decoration:none;font-size:11px;' href='http://www.webmotion.info'>@eriklinde</a></td>
+    </tr>
+  </table>
+
+
+
+
+
+  <div>
+    
+  </div>
+  
+</body>
+
 </html>
-
