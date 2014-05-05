@@ -1,6 +1,9 @@
 
 // WebMotion - A Chrome extension for simple, mouseless web browsing
 
+
+
+// REMAINING TODO THINGS
 // TODO: Make it be able to process links with HTML-escaped characters, example: "TV & Media", or "Tag name: <input>". Currently disregarding these.
 // Make sure it works here: http://www.teslamotors.com/blog/when-life-gives-you-lemons
 // make sure that the only shortcut links that work for a "non working" domain are the h and l keys.
@@ -9,120 +12,68 @@
 // callback när man klickar
 // langst ner: pilen gor att det inte funkar: http://donmelton.com/2014/04/10/memories-of-steve/
 // for google, kanske ta bort fokus från html och lägga någon annanstans så att man kan navigera?
+// If many links point to the same location, and have the same name, such as a user name, then use that same name / letter as in the first one.
 
-// "add current domain to blocked sites"
-// missar första keypress på de flesta sidor, eller?
-
-// vill den ska funka på Gmail.
 // customize vilka tangenter som ska ha vilken konfiguration. Piltangenterna ska oxå funka.
 // ampersand http://www.gogreenlights.co.uk/moreinfo.html
 
 // customiza färgen
-// installningar att underline, bold, färg...
-// w går av / på för alla sidor.
+// discreet mode.
 
 // kanske enbart det översta text input field måste highlightas
 // textfield boxes (just do the first one)
 // detect facebook box.
 
 (function () {
-	var timeouts = []; //contains the ID's of all setTimeouts.
 	
-	var modifiableLinks = []; // simply a collection of the current pages links
-	var modifiableLinksAlt = [];
-	var viewportHeight;
-
-	
-	
-
 	// Initializes certain listeners needed
 	
-	$(document).ready(function() {
-		chrome.storage.local.get(function(response) {
-			if (response.active) {
-				
-				webMotionHelpers.initializeAlphaNumericKeyListeners();
-				webMotionHelpers.initializeSpecialKeyListeners();
-				webMotionHelpers.initializeFocusBlurListeners();
-				initializeWindowScrollListener();
-				chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
-					webMotionHelpers.viewPortHeight = response.height;
-					webMotionHelpers.viewPortWidth = response.width;
-					processLinks();
-				});
-			}
-			else {
-				alert(3);
-				chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
-			}
-		});
-	});
-
-
-	function processLinks() {		
-		// Check to make sure we are not on Google, Facebook, Twitter, etc. They have their own shortcut system.
-		if (webMotionHelpers.isDomainAllowed()) {
-			modifiableLinks = [];
-			modifiableLinksAlt = [];
-			webMotionHelpers.takenAbbreviations = [];
-			webMotionHelpers.takenAbbreviationsAlt = [];
-			webMotionHelpers.resetAllLinks();
-			// Gather all the links we (potentially) need to modify
-			modifiableLinks = gatherLegitimateLinks();
-			modifiableLinks = sortLinkSetByFontSize(modifiableLinks);
-
-			// process each link (ie, figure out which letter to be the shortcut, alter the underlying html, etc)
-			
-			for (var i=0; i <= modifiableLinks.length - 1; i++) {
-				var reprocessForAltKey = webMotionHelpers.analyzeAndModifyLink(modifiableLinks[i].linkObj, false);
-				if (reprocessForAltKey) {
-					modifiableLinksAlt.push(modifiableLinks[i]);
+	
+		// chrome.runtime.sendMessage({msg: 'alert_keep_track'}, function(response) {});
+		// var stat = Date.now();
+		// console.log(Date.now());
+		
+		// chrome.runtime.sendMessage({msg: 'print_time', active: false}, function(response) {});
+	chrome.storage.local.get(function(response) {
+		
+		if (response.active) {
+			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
+				console.log('OBTAINED BLOCKLIST');
+				console.log(response);
+				webMotionHelpers.blockedRootDomains = response.blockedRootDomains;
+				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
+				webMotionHelpers.blockedPages = response.blockedPages;
+				var urlBlocked = webMotionHelpers.isURLBlocked(window.location.href);
+				if (!(urlBlocked)) {
+					webMotionHelpers.initializeKeyListeners();
 				}
-			}
+				
+				$(document).ready(function() {
+					if (!(urlBlocked)) {
+						webMotionHelpers.activateWebMotion();
+					}
+				});
 
-			for (var i=0; i <= modifiableLinksAlt.length - 1; i++) {
-				var reprocessForAltKey = webMotionHelpers.analyzeAndModifyLink(modifiableLinksAlt[i].linkObj, true);
-			}
+			});				
 		}
-	}
+		else {
+			chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
+		}
+	});
+	
+
+	// chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	//      First, validate the message's structure 
+	    
+	//     if (request.from && (request.from === "popup")) {
 
 
 
 
+	//         sendResponse(999);
+	//     }
+	// });
 
-	function gatherLegitimateLinks() {
-		var modifiableLinks = [];
-		$('a:visible').each(function(index) {				
-			if (webMotionHelpers.isLinkLegitimate($(this))) {
-				var link = {linkObj:$(this), fontSize: parseInt($(this).css('font-size')), shortCut:"", originalOrder:index, absoluteURL: $(this).prop("href")};
-				modifiableLinks.push(link);
-			}		
-		});
-		// modifiableLinks = modifiableLinks.is(":visible");
-		return modifiableLinks;
-	}
-
-	function sortLinkSetByFontSize(modifiableLinks) {
-		modifiableLinks.sort(function(a,b){
-			if(a.fontSize === b.fontSize)
-			{
-				var x = a.originalOrder, y = b.originalOrder;
-				return x < y ? -1 : x > y ? 1 : 0;
-			}
-			return b.fontSize - a.fontSize;
-		});	
-		return modifiableLinks;
-	}
-
-	function initializeWindowScrollListener() {
-		$(window).scroll(function() {
-			clearTimeout($.data(this, 'scrollTimer'));
-			$.data(this, 'scrollTimer', setTimeout(function() {
-        		// do something
-        		processLinks();
-        	}, 70));
-		});
-	}
 
 
 	// "more readable versions of basic javascript methods"

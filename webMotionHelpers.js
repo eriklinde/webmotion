@@ -1,6 +1,8 @@
 var webMotionHelpers = (function() {
 
 	var _webMotionHelpers = {};
+	_webMotionHelpers.modifiableLinks = []; // simply a collection of the current pages links
+	_webMotionHelpers.modifiableLinksAlt = [];
 	_webMotionHelpers.ctrlPressed = false;
 	_webMotionHelpers.shiftPressed = false;
 	_webMotionHelpers.altPressed = false;
@@ -13,6 +15,9 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.keyMapAlt = {}; 
 	_webMotionHelpers.takenAbbreviations = []; // maintains a list of all the user up letter / letter combos
 	_webMotionHelpers.takenAbbreviationsAlt = []; 
+	_webMotionHelpers.blockedRootDomains; 	
+	_webMotionHelpers.blockedFullDomains; 
+	_webMotionHelpers.blockedPages;
 
 	// here we will keep track of the two most recently pressed keypresses. Alphanumeric only.
 	_webMotionHelpers.keyPresses = [{character: 'dummy1', timeStamp: 100000, timeOutID: null},{character: 'dummy2', timeStamp: 200000, timeOutID: null},{character: 'dummy3', timeStamp: 300000, timeOutID: null}];
@@ -21,6 +26,142 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'h', 'j', 'k', 'l'];
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
 	_webMotionHelpers.forbiddenDomains = ['gmail','google', 'facebook.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
+
+
+	_webMotionHelpers.initializeKeyListeners = function() {		
+		console.log('sheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeet');
+		_webMotionHelpers.initializeSpecialKeyListeners();
+		_webMotionHelpers.initializeAlphaNumericKeyListeners();
+	}
+
+	_webMotionHelpers.activateWebMotion = function() {		
+		_webMotionHelpers.initializeFocusBlurListeners();
+		_webMotionHelpers.initializeWindowScrollListener();
+		chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
+			_webMotionHelpers.viewPortHeight = response.height;
+			_webMotionHelpers.viewPortWidth = response.width;
+			_webMotionHelpers.processLinks();
+		});	
+	}
+
+	_webMotionHelpers.extractFullDomainFromURL = function(url) {		
+		// returns "www.stackoverflow.com"
+		// console.log(7775);
+    	if(url.search(/^https?\:\/\//) != -1) {    		
+        	url = url.match(/^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i, "");
+    	}
+    	else {
+        	url = url.match(/^([^\/?#]+)(?:[\/?#]|$)/i, "");
+        }
+        // console.log(7776);
+        // console.log(url[1]);
+        if (_webMotionHelpers.isValidDomain(url[1])) {
+        	return url[1];
+        }
+        else {
+        	return null;
+        }    	
+	}
+
+	_webMotionHelpers.extractRootDomainFromURL = function(url) {
+		var fullDomain = _webMotionHelpers.extractFullDomainFromURL(url);
+		// console.log(98237498274);
+		// console.log();
+		if (fullDomain == null) {
+			return null;
+		}
+		else {
+			return fullDomain.match(/[a-z0-9\-]+\.[a-z0-9\-]+$/i)[0];
+		}
+		// if (url.match(/[a-z0-9\-]+\.[a-z0-9\-]+$/i)) {
+		// 	var rootDomain = url.match(/[a-z0-9\-]+\.[a-z0-9\-]+$/i)[0];
+		// 	if (_webMotionHelpers.isValidDomain(rootDomain)) {
+		// 		return rootDomain;
+		// 	}
+		// 	else {
+		// 		return null;
+		// 	}
+		// }
+		// else {
+		// 	return null;
+		// }
+	}
+
+	_webMotionHelpers.isValidDomain = function(domain) {		
+		return (domain.match(/[a-z0-9\-]+\.[a-z0-9\-]+\.[a-z0-9\-]+$/i) != null || domain.match(/[a-z0-9\-]+\.[a-z0-9\-]+$/i) != null);
+	}
+
+	_webMotionHelpers.deactivateWebMotion = function() {
+		_webMotionHelpers.terminateAllEventHandlers();
+		_webMotionHelpers.resetAllLinks();
+	}
+
+	_webMotionHelpers.terminateAllEventHandlers = function() {
+		$(document).off();
+	}
+
+
+	_webMotionHelpers.gatherLegitimateLinks = function() {
+		var modifiableLinks = [];
+		$('a:visible').each(function(index) {				
+			if (_webMotionHelpers.isLinkLegitimate($(this))) {
+				var link = {linkObj:$(this), fontSize: parseInt($(this).css('font-size')), shortCut:"", originalOrder:index, absoluteURL: $(this).prop("href")};
+				modifiableLinks.push(link);
+			}		
+		});
+		// modifiableLinks = modifiableLinks.is(":visible");
+		return modifiableLinks;
+	}
+
+	_webMotionHelpers.sortLinkSetByFontSize = function(modifiableLinks) {
+		modifiableLinks.sort(function(a,b){
+			if(a.fontSize === b.fontSize)
+			{
+				var x = a.originalOrder, y = b.originalOrder;
+				return x < y ? -1 : x > y ? 1 : 0;
+			}
+			return b.fontSize - a.fontSize;
+		});	
+		return modifiableLinks;
+	}
+
+	_webMotionHelpers.initializeWindowScrollListener = function() {
+		$(window).scroll(function() {
+			clearTimeout($.data(this, 'scrollTimer'));
+			$.data(this, 'scrollTimer', setTimeout(function() {
+        		// do something
+        		_webMotionHelpers.processLinks();
+        	}, 70));
+		});
+	}
+
+
+	_webMotionHelpers.processLinks = function() {		
+		// Check to make sure we are not on Google, Facebook, Twitter, etc. They have their own shortcut system.
+		if (webMotionHelpers.isDomainAllowed()) {
+			_webMotionHelpers.modifiableLinks = [];
+			_webMotionHelpers.modifiableLinksAlt = [];
+			webMotionHelpers.takenAbbreviations = [];
+			webMotionHelpers.takenAbbreviationsAlt = [];
+			webMotionHelpers.resetAllLinks();
+			// Gather all the links we (potentially) need to modify
+			_webMotionHelpers.modifiableLinks = _webMotionHelpers.gatherLegitimateLinks();
+			_webMotionHelpers.modifiableLinks = _webMotionHelpers.sortLinkSetByFontSize(_webMotionHelpers.modifiableLinks);
+
+			// process each link (ie, figure out which letter to be the shortcut, alter the underlying html, etc)
+			
+			for (var i=0; i <= _webMotionHelpers.modifiableLinks.length - 1; i++) {
+				var reprocessForAltKey = webMotionHelpers.analyzeAndModifyLink(_webMotionHelpers.modifiableLinks[i].linkObj, false);
+				if (reprocessForAltKey) {
+					_webMotionHelpers.modifiableLinksAlt.push(_webMotionHelpers.modifiableLinks[i]);
+				}
+			}
+
+			for (var i=0; i <= _webMotionHelpers.modifiableLinksAlt.length - 1; i++) {
+				var reprocessForAltKey = webMotionHelpers.analyzeAndModifyLink(_webMotionHelpers.modifiableLinksAlt[i].linkObj, true);
+			}
+		}
+	}
 
 
 	_webMotionHelpers.specialCharactersPressed = function() {
@@ -177,10 +318,10 @@ var webMotionHelpers = (function() {
 					chrome.runtime.sendMessage({msg: 'close_selected_tab'}, function(response) {});
 					break;
 					case 'j':
-					_webMotionHelpers.scrollWindow(300);
+					_webMotionHelpers.scrollWindow(250);
 					break;
 					case 'k':
-					_webMotionHelpers.scrollWindow(-300);
+					_webMotionHelpers.scrollWindow(-250);
 					break;
 					case 'b':
 					window.history.go(-1);
@@ -260,16 +401,32 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.initializeSpecialKeyListeners = function() {
 		// x
 
-		$(document).on("keydown keyup", function(e) {
-
-			_webMotionHelpers.cmdPressed = (e.keyCode == 91 || e.keyCode == 93);
-
+		$(document).on("keydown", function(e) {
+			if (e.keyCode == 91 || e.keyCode == 93) {
+				_webMotionHelpers.cmdPressed = true;	
+			}
+			else if (e.keyCode == 16) {
+				_webMotionHelpers.shiftPressed = true;
+			}
+			else if (e.keyCode == 17) {
+				_webMotionHelpers.ctrlPressed = true;
+			}
+			// altPressed is deal with elsewhere
 		});
-		$(document).on("keyup keydown", function(e) {
-			_webMotionHelpers.shiftPressed = (e.keyCode == 16);
-		});
-		$(document).on("keyup keydown", function(e) {
-			_webMotionHelpers.ctrlPressed = (e.keyCode == 17);
+
+		$(document).on("keyup", function(e) {
+			if (e.keyCode == 91 || e.keyCode == 93) {
+				_webMotionHelpers.cmdPressed = false;	
+			}
+			else if (e.keyCode == 16) {
+				_webMotionHelpers.shiftPressed = false;
+			}
+			else if (e.keyCode == 17) {
+				_webMotionHelpers.ctrlPressed = false;
+			}
+			else if (e.keyCode == 18) {
+				_webMotionHelpers.altPressed = false;
+			}
 		});
 
 		$(document).on("keydown", function(e) {
@@ -307,13 +464,13 @@ var webMotionHelpers = (function() {
 			}
 		});
 
-$(document).on("keyup", function(e) {
-	if (e.keyCode == 18) {
-		_webMotionHelpers.altPressed = false;
-	}
-});
 
 }
+
+_webMotionHelpers.initializeTabNavigationListeners = function(elem) {
+
+}
+
 
 _webMotionHelpers.getFirstParentElementWithBGProperty = function(elem) {
 	var allParents = elem.parents();
@@ -439,7 +596,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		var negativeTextRequirements = new RegExp("[\&\<\>]+");
 		var textIndentation = Math.abs(parseInt(DOMElem.css('text-indent')));
 
-		return this.isElementInView(DOMElem) && DOMElem.attr('href') != undefined && DOMElem.attr('href') != "" && DOMElem.attr('href') != "#" && (textIndentation < 50) && positiveTextRequirements.test(DOMElem.text()) && !(negativeTextRequirements.test(DOMElem.text())) && !(DOMElem.attr('href').containsString("javascript")) && DOMElem.css('display') != "none" && DOMElem.css('visibility') != "hidden" && window.location != DOMElem.prop('href');
+		return this.isElementInView(DOMElem) && DOMElem.attr('href') != undefined && DOMElem.attr('href') != "" && DOMElem.attr('href') != "#" && (textIndentation < 50) && positiveTextRequirements.test(DOMElem.text()) && !(negativeTextRequirements.test(DOMElem.text())) && !(DOMElem.attr('href').containsString("javascript")) && DOMElem.css('display') != "none" && DOMElem.css('visibility') != "hidden" && window.location.href != DOMElem.prop('href');
 	}
 
 
@@ -553,6 +710,53 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		} 
 	}
 
+
+
+
+	_webMotionHelpers.isURLBlocked = function(url, blockArgs) {	
+		// blockArgs are optional, if not there, we will use
+		// _webMotionHelpers.blockedRootDomains
+		// _webMotionHelpers.blockedFullDomains 
+		// _webMotionHelpers.blockedPages instead.
+		// The reason for this is that we can't always assume that _webMotionHelpers.blockedRootDomains etc have been initialized. Need the option of supplying
+		// them manually as well. For example, they won't have been initialized
+		// when calling from popup.js.
+
+		var localBlocks = new Object();
+		console.log('hulk hogan');
+		console.log(blockArgs);
+		console.log(typeof blockArgs);
+		console.log(typeof blockArgs === "undefined");
+
+		if (typeof blockArgs === "undefined") {
+			localBlocks = _webMotionHelpers;
+			console.log('yo yo ma');
+		}
+		else {
+			localBlocks = blockArgs;
+			console.log('yeah yeah mah!');
+		}
+		console.log(localBlocks);
+		
+		console.log('he he hey!!');
+		console.log(url);
+		console.log(2);
+		console.log(localBlocks.blockedRootDomains);
+		if (localBlocks.blockedRootDomains.containsString(_webMotionHelpers.extractRootDomainFromURL(url))) {
+			console.log(1);
+			return true; 
+		}
+		if (localBlocks.blockedFullDomains.containsString(_webMotionHelpers.extractFullDomainFromURL(url))) {
+			console.log(2);
+			return true; 
+		}
+		if (localBlocks.blockedPages.containsString(url)) {
+			console.log(3);
+			return true; 
+		}
+		console.log(4);
+		return false;
+	}
 
 	_webMotionHelpers.getKeymapValue = function(key, alternative) {
 		if (alternative) {
