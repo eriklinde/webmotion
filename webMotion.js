@@ -28,12 +28,6 @@
 	
 	// Initializes certain listeners needed
 	
-	
-		// chrome.runtime.sendMessage({msg: 'alert_keep_track'}, function(response) {});
-		// var stat = Date.now();
-		// console.log(Date.now());
-		
-		// chrome.runtime.sendMessage({msg: 'print_time', active: false}, function(response) {});
 	chrome.storage.local.get(function(response) {
 		
 		if (response.active) {
@@ -60,19 +54,6 @@
 			chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
 		}
 	});
-	
-
-	// chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	//      First, validate the message's structure 
-	    
-	//     if (request.from && (request.from === "popup")) {
-
-
-
-
-	//         sendResponse(999);
-	//     }
-	// });
 
 
 
