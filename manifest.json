@@ -2,7 +2,7 @@
   "manifest_version": 2,
     
   "background": {
-    "scripts": ["webMotionHelpers.js", "background.js"] 
+    "scripts": ["jQuery.js", "webMotionHelpers.js", "background.js"] 
   },
 
   "name": "WebMotion",
@@ -25,7 +25,6 @@
 
   "content_scripts": [ {
     "js": [ "jQuery.js", "jQueryEasing.js", "jQuery.scrollTo.js", "webMotionHelpers.js", "iColor.js", "webMotion.js" ],
-    "matches": [ "http://*/*", "https://*/*"], 
-    "exclude_globs": ["*google.com*"]
+    "matches": [ "http://*/*", "https://*/*"]
     }]
 }

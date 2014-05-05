@@ -11,28 +11,40 @@
   <table>
     
     <tr>
-      <td style='text-align:center;' colspan="2"><img style='width:50px' src='popup_top_image.png'></img></td>
+      <td style='text-align:left;' colspan="2"><img style='width:100%' src='popup_top_image.png'></img></td>
     </tr>    
+
+    <tr>
+      <td colspan="2"><hr></td>
+    </tr>
+
 
     <tr >
       <td id='on-off-statement' style='margin-top:-40px'>WebMotion is currently <b></b></td>
-      <td style='width:20px; margin-top:-40px'><div class='js-checkbox'></div></td>
+      <td style='width:20px; margin-top:-40px'><div id='activation-switch' data-type='activation-switch' class='js-checkbox'></div></td>
     </tr>
 
     <tr>
       <td colspan="2"><hr></td>
     </tr>
     <tr>
-      <td colspan="2">Not working correctly on this site? Disable WebMotion on:</td>
+      <td colspan="2">Disable WebMotion on:</td>
       
     </tr>
     
-    <tr>
-      <td colspan="2"><div class='button'>google.com</div></td>
+    <tr id='block-page-container'>
+      <td class='small-font-indented' id='url-field-all' colspan="1">http://efew.ewcom.com</td>
+      <td><div id='block-page-checkbox' data-type='block-page' class='js-checkbox'></div></td>
     </tr>
 
-    <tr>
-      <td colspan="2" style='padding-top:0'><div class='button'>google.com/eail/links/rfewf.html</div></td>
+    <tr id='block-full-domain-container'>
+      <td class='small-font-indented' id='url-field-full-domain' colspan="1" style='padding-top:0'>www.xxx.com</td>
+      <td><div id='block-full-domain-checkbox' data-type='block-full-domain' class='js-checkbox'></div></td>
+    </tr>
+
+    <tr id='block-root-domain-container'>
+      <td class='small-font-indented' id='url-field-root-domain' colspan="1" style='padding-top:0'>*.xcc.com</td>
+      <td><div id='block-root-domain-checkbox' data-type='block-root-domain' class='js-checkbox'></div></td>
     </tr>
 
     <tr>
@@ -44,12 +56,10 @@
   <table style='margin-bottom:10px;'>
     <tr>
       <td><a href='http://www.webmotion.info'>More settings</a></td>
-      <td style='text-align:right'><a href='http://www.webmotion.info'>About information</a></td>
+      <td style='text-align:right'><a href='http://www.webmotion.info'>More information</a></td>
     </tr>
     <tr>
-      
-      <td colspan="2" style='text-align:right; font-size:11px;'>Created by <a style='text-decoration:none;font-size:11px;' href='http://www.webmotion.info'>@eriklinde</a></td>
-    </tr>
+
   </table>
 
 
