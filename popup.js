@@ -7,9 +7,9 @@
     chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(blockList) {
       chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT}, function(tabs) {
         currentUrl = tabs[0].url;
-        console.log('Ola lindholm');
-        console.log(tabs[0]);
-        console.log(currentUrl);
+        // console.log('Ola lindholm');
+        // console.log(tabs[0]);
+        // console.log(currentUrl);
         
         // create a fake link in order to make use of link.pathname and search methods.
         var a = document.createElement('a');
@@ -65,6 +65,14 @@
             $('#block-root-domain-checkbox').addClass('js-checkbox-unchecked');
           }
 
+          chrome.storage.local.get(function(response) {
+              if (!(response.active)) {
+                $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none');
+              }
+              else {
+                $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto'); 
+              }
+          });      
 
         })});
     });       
@@ -100,7 +108,9 @@ function checkboxTrigger(event) {
       storage.set({active: false}, function() {
         $('#on-off-statement b').text('OFF');
         $('#on-off-statement b').removeClass('green');
+        
       });
+      $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none'); 
       chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
       chrome.runtime.sendMessage({msg: 'change_webmotion_active_status', active: false}, function(response) {});
     }
@@ -124,6 +134,7 @@ function checkboxTrigger(event) {
         $('#on-off-statement b').text('ON');
         $('#on-off-statement b').addClass('green');        
       });
+      $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto'); 
       chrome.runtime.sendMessage({msg: 'update_all_icons', active: true}, function(response) {});
       chrome.runtime.sendMessage({msg: 'change_webmotion_active_status', active: true}, function(response) {});
     }

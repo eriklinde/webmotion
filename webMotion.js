@@ -27,24 +27,32 @@
 (function () {
 	
 	// Initializes certain listeners needed
+	// console.log(webMotionHelpers.twoLevelTLDs);
+	// alert(webMotionHelpers.extractRootDomainFromURL('http://www.xxx.co.uk/wfewf/wef/wefew?32f2ef'));
+	// console.log(webMotionHelpers.isValidDomain('news.ww-w.cn-xN.com.msemu'));
 	
 	chrome.storage.local.get(function(response) {
 		
 		if (response.active) {
 			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
-				console.log('OBTAINED BLOCKLIST');
-				console.log(response);
+				// console.log('OBTAINED BLOCKLIST');
+				// console.log(response);
 				webMotionHelpers.blockedRootDomains = response.blockedRootDomains;
 				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
 				webMotionHelpers.blockedPages = response.blockedPages;
 				var urlBlocked = webMotionHelpers.isURLBlocked(window.location.href);
 				if (!(urlBlocked)) {
-					webMotionHelpers.initializeKeyListeners();
+					// initialize the listeners as soon as we can (ie dont wait for document.ready)
+					webMotionHelpers.initializeStandardKeyListeners();
+					webMotionHelpers.initializeAlwaysOnKeyListeners();
+				}
+				else {
+					webMotionHelpers.initializeAlwaysOnKeyListeners(); // h & l (move between tabs)
 				}
 				
 				$(document).ready(function() {
 					if (!(urlBlocked)) {
-						webMotionHelpers.activateWebMotion();
+						webMotionHelpers.activateWebMotion(false);
 					}
 				});
 
