@@ -633,12 +633,14 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 	_webMotionHelpers.noInputFieldsActive = function() {
 		// true if user is currently typing inside a text field or a text area.
 		// special case for facebook... 
+		var el = document.activeElement;
+		var inputFieldsActive = el && ((el.tagName.toLowerCase() == 'input' && (el.type == 'text' || el.type == 'password' || el.type == 'email' || el.type == 'search' || el.type == 'url' || el.type == 'tel' || el.type == 'time' || el.type == 'number' )) || el.tagName.toLowerCase() == 'textarea');
+
 		if (_webMotionHelpers.extractRootDomainFromURL(window.location.href) == 'facebook.com') {
-			return ($("#headNav div.innerWrap div.textInput div[role='textbox']").attr('aria-expanded') == 'false');
+			return !($("#headNav div.innerWrap div.textInput div[role='textbox']").attr('aria-expanded') == 'true' || inputFieldsActive);
 		}
 		else {
-			var el = document.activeElement;
-			return !(el && ((el.tagName.toLowerCase() == 'input' && (el.type == 'text' || el.type == 'password' || el.type == 'email' || el.type == 'search' || el.type == 'url' || el.type == 'tel' || el.type == 'time' || el.type == 'number' )) || el.tagName.toLowerCase() == 'textarea'));			
+			return !(inputFieldsActive);			
 		}
 	}
 	
