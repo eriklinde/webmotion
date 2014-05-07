@@ -19,9 +19,12 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.blockedFullDomains; 
 	_webMotionHelpers.blockedPages;
 	_webMotionHelpers.twoLevelTLDs;
+	_webMotionHelpers.DOMElemForEscaping;
 	// here we will keep track of the two most recently pressed keypresses. Alphanumeric only.
 	_webMotionHelpers.keyPresses = [{character: 'dummy1', timeStamp: 100000, timeOutID: null},{character: 'dummy2', timeStamp: 200000, timeOutID: null},{character: 'dummy3', timeStamp: 300000, timeOutID: null}];
 
+	//the HTML entities of &, <, >, " and SPACE.  these will not be made into clickable letters.
+	_webMotionHelpers.reservedHTMLCharacters = ["&amp;", "&lt;", "&gt;", "&quot;", "&nbsp;"];
 	//these we use these to close website, go back and forth between tabs, etc.
 	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'j', 'k'];
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
@@ -35,7 +38,7 @@ var webMotionHelpers = (function() {
 		_webMotionHelpers.initializeAlphaNumericKeyListeners();
 	}
 	_webMotionHelpers.initializeAlwaysOnKeyListeners = function() {		
-		console.log('sheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeet');
+		// console.log('sheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeetsheeet');
 		$(document).on('keydown', 'html', function(e) {
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
 			if (_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) {
@@ -44,7 +47,8 @@ var webMotionHelpers = (function() {
 		});
 	}
 
-	_webMotionHelpers.activateWebMotion = function(activateKeyListeners) {		
+	_webMotionHelpers.activateWebMotion = function(activateKeyListeners) {
+		_webMotionHelpers.DOMElemForEscaping = document.createElement("textarea");
 		_webMotionHelpers.initializeFocusBlurListeners();
 		_webMotionHelpers.initializeWindowScrollListener();
 		if (activateKeyListeners) {
@@ -214,24 +218,35 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.analyzeAndModifyLink = function(linkObj, alternative) {
 		// Figures out who the possible candiates are inside the link text, and maps them to their position in the innerHTML of that link.
 		// If alternative == true, then everything will be pushed to the 'backup' arrays used when user presses ALT key
+		// console.log('***** 1');
+		// console.log(linkObj.text());
 		var letterMappings = _webMotionHelpers.genereateLetterToHTMLMapping(linkObj); // contains the text() mapped to the underlying HTML
 		if (letterMappings.length == 0) {
 			// no available text inside link. Could be image. For now, do nothing.
+			// console.log('***** 2');
 			return false; 
 		}
 		else {
+			// console.log('***** 3');
 			var letterIndex = 0;
 			var chosenLetter = null; 
 			var chosenLetterOrigPos = null;
+			// console.log(letterMappings);
 			while ((getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.reservedShortcuts.containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.alwaysPermissibleShortcuts.containsString(letterMappings[letterIndex].processedLetter)) && letterIndex < letterMappings.length - 1) {
 				letterIndex++;
+				// console.log('***** 4');
 			}
+			// console.log(letterIndex);
 			if (!(getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter)) && !(_webMotionHelpers.reservedShortcuts.containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.alwaysPermissibleShortcuts.containsString(letterMappings[letterIndex].processedLetter))) {
-
+				// console.log('***** 5');
 				chosenLetter = letterMappings[letterIndex].processedLetter;
+				// console.log(chosenLetter);
 				chosenLetterOrigPos = letterMappings[letterIndex].originalPosition;
+				// console.log(chosenLetterOrigPos);
 				pushToTakenAbbreviations(chosenLetter, alternative);
 				var existingInnerHTML = linkObj.html();
+				// console.log(existingInnerHTML);
+				// console.log(unescape(existingInnerHTML));
 				var colorToUse = _webMotionHelpers.standardColor;
 				var deltaE = _webMotionHelpers.colorDistance(colorToUse,linkObj.css('color'));
 				if (deltaE < 50) {
@@ -242,12 +257,14 @@ var webMotionHelpers = (function() {
 				
 
 				if (_webMotionHelpers.hasBackgroundColorProperty(linkObj)) {
+					// console.log('***** 6');
 					var deltaE = _webMotionHelpers.colorDistance(_webMotionHelpers.standardColor,linkObj.css('background-color'));
 					if (deltaE < 50) {
 						colorToUse = _webMotionHelpers.alternativeColor;
 					}
 				}
 				else {
+					// console.log('***** 7');
 					// get all the background elements of the parents.
 					var parentWithBG = _webMotionHelpers.getFirstParentElementWithBGProperty(linkObj);
 					if (parentWithBG) {
@@ -265,6 +282,7 @@ var webMotionHelpers = (function() {
 				// on the tech stars page. We'll change the capitalize on the host link to 'none' and then instead just capitalize the first
 				// letter.
 				if (linkObj.css('text-transform') == 'capitalize') {
+					// console.log('***** 8');
 					// First remove 'capitalize' from the link (otherwise, our tag will be capitalized as well)
 					linkObj.css('text-transform', 'none');
 					var firstLetter = existingInnerHTML[letterMappings[0].originalPosition]; 
@@ -275,6 +293,7 @@ var webMotionHelpers = (function() {
 					existingInnerHTML.replaceAt(letterMappings[0].originalPosition, newFirstLetter);
 					// then, if the chosen letter is also the first one in the first word, be sure to capitalize it.
 					if (chosenLetterOrigPos == 0) {
+						// console.log('***** 9');
 						// known bug: if the letter is enclosed in an HTML tag such as span, chosenLetterOrigPos will
 						// not equal 0. So there is a microsmall chance that the following will happen:
 						// 1) capitalize will be present in the link
@@ -287,9 +306,12 @@ var webMotionHelpers = (function() {
 
 
 				if (alternative) {
+					// console.log('***** 10');
 					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-active='false' data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='alternative' style=\"\">"+newLetter+"</webmotion>");
 				}
 				else {
+					// console.log('***** 11');
+					// console.log(newLetter);
 					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-active='true' data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+";font-weight:bold;\">"+newLetter+"</webmotion>");
 				}
 				
@@ -298,6 +320,7 @@ var webMotionHelpers = (function() {
 				return false;
 			}
 			else {
+				// console.log('***** 12');
 				return true;
 			}
 		}
@@ -331,7 +354,7 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.handleAlwaysPermissibleKeyPress = function(pressedChar) {
-		if (!(_webMotionHelpers.specialCharactersPressed())) {
+		if (!(_webMotionHelpers.specialCharactersPressed()) && _webMotionHelpers.noInputFieldsActive()) {
 			switch(pressedChar)
 				{	
 					case 'h':
@@ -352,8 +375,8 @@ var webMotionHelpers = (function() {
 
 			// alert(webMotionHelpers.specialCharactersPressed());
 			// if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && (_webMotionHelpers.isDomainAllowed() || _webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) && !(_webMotionHelpers.specialCharactersPressed())) {
-			console.log("_webMotionHelpers.reservedShortcuts.containsString(pressedChar)");
-			console.log(_webMotionHelpers.reservedShortcuts.containsString(pressedChar));
+			// console.log("_webMotionHelpers.reservedShortcuts.containsString(pressedChar)");
+			// console.log(_webMotionHelpers.reservedShortcuts.containsString(pressedChar));
 			if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && !(_webMotionHelpers.specialCharactersPressed())) {
 				// user pressed one of the 'reserved keys', example hjkl
 
@@ -609,8 +632,14 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 
 	_webMotionHelpers.noInputFieldsActive = function() {
 		// true if user is currently typing inside a text field or a text area.
-		var el = document.activeElement;
-		return !(el && ((el.tagName.toLowerCase() == 'input' && (el.type == 'text' || el.type == 'password' || el.type == 'email' || el.type == 'search' || el.type == 'url' || el.type == 'tel' || el.type == 'time' || el.type == 'number' )) || el.tagName.toLowerCase() == 'textarea'));
+		// special case for facebook... 
+		if (_webMotionHelpers.extractRootDomainFromURL(window.location.href) == 'facebook.com') {
+			return ($("#headNav div.innerWrap div.textInput div[role='textbox']").attr('aria-expanded') == 'false');
+		}
+		else {
+			var el = document.activeElement;
+			return !(el && ((el.tagName.toLowerCase() == 'input' && (el.type == 'text' || el.type == 'password' || el.type == 'email' || el.type == 'search' || el.type == 'url' || el.type == 'tel' || el.type == 'time' || el.type == 'number' )) || el.tagName.toLowerCase() == 'textarea'));			
+		}
 	}
 	
 	_webMotionHelpers.scrollWindow = function(px) {
@@ -643,7 +672,9 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		var negativeTextRequirements = new RegExp("[\&\<\>]+");
 		var textIndentation = Math.abs(parseInt(DOMElem.css('text-indent')));
 
-		return this.isElementInView(DOMElem) && DOMElem.attr('href') != undefined && DOMElem.attr('href') != "" && DOMElem.attr('href') != "#" && (textIndentation < 50) && positiveTextRequirements.test(DOMElem.text()) && !(negativeTextRequirements.test(DOMElem.text())) && !(DOMElem.attr('href').containsString("javascript")) && DOMElem.css('display') != "none" && DOMElem.css('visibility') != "hidden" && window.location.href != DOMElem.prop('href');
+		// return this.isElementInView(DOMElem) && DOMElem.attr('href') != undefined && DOMElem.attr('href') != "" && DOMElem.attr('href') != "#" && (textIndentation < 50) && positiveTextRequirements.test(DOMElem.text()) && !(negativeTextRequirements.test(DOMElem.text())) && !(DOMElem.attr('href').containsString("javascript")) && DOMElem.css('display') != "none" && DOMElem.css('visibility') != "hidden" && window.location.href != DOMElem.prop('href');
+		return this.isElementInView(DOMElem) && DOMElem.attr('href') != undefined && DOMElem.attr('href') != "" && DOMElem.attr('href') != "#" && (textIndentation < 50) && positiveTextRequirements.test(DOMElem.text()) && !(DOMElem.attr('href').containsString("javascript")) && DOMElem.css('display') != "none" && DOMElem.css('visibility') != "hidden" && window.location.href != DOMElem.prop('href');
+
 	}
 
 
@@ -668,21 +699,61 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 
 		[{"processedLetter":"h","originalPosition":0},{"processedLetter":"e","originalPosition":1},{"processedLetter":"l","originalPosition":2},{"processedLetter":"o","originalPosition":4},{"processedLetter":"b","originalPosition":10},{"processedLetter":"r","originalPosition":11},{"processedLetter":"t","originalPosition":13},{"processedLetter":"w","originalPosition":26},{"processedLetter":"d","originalPosition":41},{"processedLetter":"u","originalPosition":43},{"processedLetter":"c","originalPosition":44},{"processedLetter":"a","originalPosition":58},{"processedLetter":"y","originalPosition":62}] 
 		*/
+		// console.log('+++++++++++++++++++++++++++++++++++++++++++++');
 
 		var nodesContainer = [];
 		var nodesCumulativeHTMLLength = 0;
 		linkDOMElem.contents().each(function(index, value) {
+			// console.log('value');
+			// console.log(value);
+			// console.log($(value));
 			var isPureText = ($(this).context.nodeName == '#text');
 			if (isPureText) {
 				// charOffset = if we have three nodes, the first one has an offset of 0, the second 
 				// has an offset of the length of the first, and the third one has an offset of the 2 first ones
 				// used to be this!!!!
-				nodesContainer.push({txt: $(this).text(), html: $(this).text(), charOffset: nodesCumulativeHTMLLength});
+				// console.log('textStr');
+				
+				// var textStr = $(this).text();
+				// console.log(textStr);
+
+				// textStr = textStr.replace('&','&amp;');
+				// console.log(textStr);
+				// console.log(98798789);
+				// console.log($(this).text());
+				// console.log(value.innerHTML);
+				// var a = document.createElement('div');
+				// console.log('a.innerHTML');
+				// console.log(a.innerHTML);
+				// var newContent = document.createTextNode("Hi there and greetings!");
+				// console.log(newContent.innerHTML);
+				// var newDiv = document.createElement("div"); 
+				  // var newContent = document.createTextNode('Hi there & greetings!'); 
+				  // convert "A&B" to "A&amp;B"
+				  _webMotionHelpers.DOMElemForEscaping.innerHTML = $(this).text();
+				  var escapedText = _webMotionHelpers.DOMElemForEscaping.innerHTML;
+				  // console.log(escapedText);
+
+				  // newDiv.appendChild(newContent); //add the text node to the newly created div.
+				// console.log('newDiv.innerHTML');
+				  // console.log(newDiv.innerHTML);
+				nodesContainer.push({txt: escapedText, html: escapedText, charOffset: nodesCumulativeHTMLLength});
+				// document.write
 				// nodesContainer.push({txt: $(this).text(), html: _webMotionHelpers.htmlDecode($(this).context.innerText), charOffset: nodesCumulativeHTMLLength});
-				nodesCumulativeHTMLLength += $(this).text().length;
+				// console.log('havstam');
+				nodesCumulativeHTMLLength += escapedText.length;
+				// console.log('havstam2');
 			}
 			else {
-				nodesContainer.push({txt: $(this).text(), html: $(this).context.outerHTML, charOffset: nodesCumulativeHTMLLength});
+				// console.log('bertile');
+				// console.log($(this).context.outerHTML);
+				_webMotionHelpers.DOMElemForEscaping.innerHTML = $(this).text();
+				var escapedText = _webMotionHelpers.DOMElemForEscaping.innerHTML;
+				// console.log('******');
+				// console.log(escapedText);
+				// console.log($(this).text());
+				// console.log('******');
+				nodesContainer.push({txt: escapedText, html: $(this).context.outerHTML, charOffset: nodesCumulativeHTMLLength});
 				nodesCumulativeHTMLLength += $(this).context.outerHTML.length;
 			}
 		});
@@ -693,19 +764,63 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		for(var i = 0;i <= nodesContainer.length - 1; i++) {
 			var miniMapping = [];
 
-			var temp = "This is a string.";
+			// var temp = "This is a string.";
 			// the g in the regular expression says to search the whole string 
 			// rather than just find the first occurrence
+			// console.log('nodesContainer');
+			// console.log(nodesContainer);
+			
+			// console.log('this sucks...');
+			// console.log(nodesContainer[i].html);
+			// console.log(nodesContainer[i].txt);
+			// console.log(nodesContainer[i].html.split(nodesContainer[i].txt));
 			if (nodesContainer[i].html.split(nodesContainer[i].txt).length-1 == 1) {
+				// the above means we only deal with <em>hello</em>. ie if there is something weird going on, we wont' touch it.
+				// console.log('eldprovet');
+				// console.log(nodesContainer[i].txt);
 				var startPos = nodesContainer[i].html.indexOf(nodesContainer[i].txt);
+
+				// now we must figure out if there are any forbidden characters. Any characters within for example &amp; ie a, m,  and p are forbidden.
+				var forbiddenPositions = [];
+
+				for(var ind = 0; ind <= _webMotionHelpers.reservedHTMLCharacters.length - 1; ind++) {
+					// search globally in the string using regex "g", retrieve all matches
+
+					var regEx = new RegExp(_webMotionHelpers.reservedHTMLCharacters[ind], "g"), result, indices = [];
+					while ( (result = regEx.exec(nodesContainer[i].txt)) ) {
+    					indices.push(result.index);
+					}
+					// Indices will contain the search results, for example: for search string "&Hej&A&" => "&amp;Hej&amp;A&amp;" 
+					// if searching for "&amp;", resulting indices => [0, 8, 14] (ie 3 matches)
+					for(var e = 0; e <= indices.length - 1; e++) {
+
+						for(var f = 0; f <= _webMotionHelpers.reservedHTMLCharacters[ind].length - 1; f++ ) {
+							forbiddenPositions.push(indices[e] + f + startPos);							
+						}
+					}
+					// if string is as follows: <em>&amp;B&amp;HAJ&lt;</em>, then forbiddenPositions will be:
+					// 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 18, 19, 20, 21
+					// (Note it may not be in order...)
+
+
+					// _webMotionHelpers.reservedHTMLCharacters[ind]
+				}
+				// console.log(JSON.stringify(forbiddenPositions));
 				for (var j = startPos; j <= startPos + nodesContainer[i].txt.length - 1; j++) {
 					var currentLetter = nodesContainer[i].html[j].toLowerCase();
+
 					// We only want the letter if it's alpha numeric and if we haven't already seen it, and if it's not a reserved shortcut.
+					// Note: *** adding to list of criteria: we also don't want it if it's among the forbidden letters.
 					// NOTE: WE ACTUALLY DO WANT THE LETTERS EVEN IF IT'S A RESERVED SHORTCUT. SO COMMENTING OUT 
 					// THAT AND REPLACING SO THIS HAPPENS. WE WANT THIS BECAUSE OF FOR A WORD LIKE "back", IF CAPITALIZE IS PRESENT
 					// WE WANT TO BE ABLE TO CAPITALIZE THE FIRST WORD IF NEEDED. THUS WE MUST KNOW ABOUT IT.
 					// if (this.isAlphanumeric(currentLetter) && !(this.reservedShortcuts.containsString(currentLetter)) && !(
-						if (this.isAlphanumeric(currentLetter) && !(uniqueLettersInNodes.containsString(currentLetter))) {
+						// console.log('Petter von der Niklasson');
+						// console.log(j);
+						
+						// if (this.isAlphanumeric(currentLetter) && !(uniqueLettersInNodes.containsString(currentLetter))) {
+						// we r modifying the below to include the constraint that we don't want an escaped character to slip in there...
+						if (this.isAlphanumeric(currentLetter) && (forbiddenPositions.indexOf(j) == -1) && !(uniqueLettersInNodes.containsString(currentLetter))) {
 							miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});				
 							uniqueLettersInNodes.push(currentLetter);
 						}
@@ -715,6 +830,8 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 				// However, <span>Pan</span> should be fine. Which will be the case with the above code as well, as it is case-sensivite.
 			}
 			// now we append the current minimapping to the larger metaMiniMapping
+			// console.log('grand master fat slim');
+			// console.log(JSON.stringify(miniMapping));
 			metaMiniMapping.push.apply(metaMiniMapping, miniMapping);
 		}
 		

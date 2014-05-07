@@ -4,25 +4,16 @@
 
 
 // REMAINING TODO THINGS
-// TODO: Make it be able to process links with HTML-escaped characters, example: "TV & Media", or "Tag name: <input>". Currently disregarding these.
 // Make sure it works here: http://www.teslamotors.com/blog/when-life-gives-you-lemons
 // make sure that the only shortcut links that work for a "non working" domain are the h and l keys.
 // For already traveled link : use the traveled link color?
 // aftonbladet
 // callback när man klickar
-// langst ner: pilen gor att det inte funkar: http://donmelton.com/2014/04/10/memories-of-steve/
-// for google, kanske ta bort fokus från html och lägga någon annanstans så att man kan navigera?
 // If many links point to the same location, and have the same name, such as a user name, then use that same name / letter as in the first one.
-
-// customize vilka tangenter som ska ha vilken konfiguration. Piltangenterna ska oxå funka.
-// ampersand http://www.gogreenlights.co.uk/moreinfo.html
-
-// customiza färgen
-// discreet mode.
 
 // kanske enbart det översta text input field måste highlightas
 // textfield boxes (just do the first one)
-// detect facebook box.
+
 
 (function () {
 	
@@ -41,6 +32,7 @@
 				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
 				webMotionHelpers.blockedPages = response.blockedPages;
 				var urlBlocked = webMotionHelpers.isURLBlocked(window.location.href);
+				// alert();
 				if (!(urlBlocked)) {
 					// initialize the listeners as soon as we can (ie dont wait for document.ready)
 					webMotionHelpers.initializeStandardKeyListeners();
@@ -51,8 +43,17 @@
 				}
 				
 				$(document).ready(function() {
+
+					// $('body').html('');
+					// $('body').append("<p><a href='rigbkre'>BB <em>A</em>AAA</a></p><p><a href='rigbkre'>ABA<em>A</em></a></p><p><a href='rigbkre'><em>A&C&</em>AAA</a></p><p><a id='msee' href='rigbkre'>A'D</a></p><p><a href='i3ugh34u'>&B&he&lt;j!&</a></p>");
+					// alert($('#msee').html());
+					// alert(333);
 					if (!(urlBlocked)) {
-						webMotionHelpers.activateWebMotion(false);
+						// setTimeout(function() {
+							// alert();
+							webMotionHelpers.activateWebMotion(false);	
+						// }, 2000);
+						
 					}
 				});
 
