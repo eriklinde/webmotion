@@ -22,6 +22,7 @@
 		
 		if (response.active) {
 			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
+				webMotionHelpers.terminateAllEventHandlers(true);
 				webMotionHelpers.blockedRootDomains = response.blockedRootDomains;
 				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
 				webMotionHelpers.blockedPages = response.blockedPages;
@@ -36,13 +37,10 @@
 				}
 				
 				$(document).ready(function() {
-					$(document).on('keydown', function(e) {
-						console.log(e);
-					});
 					// $('body').html('');
 					// $('body').append("<p><a href='rigbkre'>BB <em>A</em>AAA</a></p><p><a href='rigbkre'>ABA<em>A</em></a></p><p><a href='rigbkre'><em>A&C&</em>AAA</a></p><p><a id='msee' href='rigbkre'>A'D</a></p><p><a href='i3ugh34u'>&B&he&lt;j!&</a></p>");
 					if (!(urlBlocked)) {
-						webMotionHelpers.activateWebMotion(false);							
+						webMotionHelpers.activateWebMotion(false, false);							
 					}
 				});
 

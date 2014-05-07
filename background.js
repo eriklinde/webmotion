@@ -26,13 +26,13 @@ chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPag
 });	
 
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-	chrome.storage.local.get(function(response) {
-		if (response.active) {
-			chrome.tabs.executeScript(activeInfo.tabId, {code: "webMotionHelpers.restartListeners();"}, function() {});
-		}
-	});
-});
+// chrome.tabs.onActivated.addListener(function(activeInfo) {
+// 	chrome.storage.local.get(function(response) {
+// 		if (response.active) {
+// 			chrome.tabs.executeScript(activeInfo.tabId, {code: "webMotionHelpers.restartListeners();"}, function() {});
+// 		}
+// 	});
+// });
 
 
 chrome.storage.onChanged.addListener(function(changes, areaName) {
@@ -181,8 +181,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			for(var i = 0; i <= windowCollection.length - 1; i++) {
 				for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 					if (request.active) {
-						if (!(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url))) {
-							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true);"}, function() {});
+						var localBlocks = new Object();
+						localBlocks.blockedRootDomains = blockedRootDomains; 
+						localBlocks.blockedFullDomains = blockedFullDomains; 
+						localBlocks.blockedPages = blockedPages; 
+
+						if (!(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
+							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, true);"}, function() {});
 						}
 						else {
 							// if blocked, just initialize the h, l keys.
@@ -197,7 +202,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		});
 	}
 	else if (request.msg == 'print_time') {
-		// console.log(Date.now());
+		// console.log(Date.now()); 
 	}
 	else if (request.msg == 'get_local_blocks') {
 		// this is extremely quick as we do not go via the local storage.
@@ -242,17 +247,17 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 				localBlocks.blockedPages = blockedPages; 
 				if (urlObj.type == 'fullDomain') {
 					if (webMotionHelpers.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true);"}, function() {});
+						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
 					}
 				}
 				else if (urlObj.type == 'rootDomain') {
 					if (webMotionHelpers.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true);"}, function() {});
+						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
 					}
 				}
 				else if (urlObj.type == 'page') {
 					if (windowCollection[i].tabs[j].url == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true);"}, function() {});
+						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
 					}
 				}
 			}

@@ -30,51 +30,47 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
 	_webMotionHelpers.defaultForbiddenDomains = ['google.com', 'google.co.in', 'google.co.uk', 'google.fr', 'google.es', 'google.ru', 'google.jp', 'google.it', 'google.com.br', 'google.com.mx', 'google.ca', 'google.com.hk', 'google.de', 'gmail.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
 
-	_webMotionHelpers.restartListeners = function() {		
-		// we will call this function whenever a user navigates to a new tab or to a new window
-		_webMotionHelpers.terminateAllEventHandlers(true);
-		// webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks)
-		// alert(_webMotionHelpers.blockedRootDomains);
-		// console.log('restarted...');
-		// $(document).ready(function() {
-			_webMotionHelpers.initializeAlwaysOnKeyListeners(); 
-			_webMotionHelpers.initializeSpecialKeyListeners();
-			if (!(_webMotionHelpers.isURLBlocked(window.location.href))) {
-				// alert(2);
-				_webMotionHelpers.initializeAlphaNumericKeyListeners();
-				_webMotionHelpers.initializeFocusBlurListeners();
-				_webMotionHelpers.initializeWindowScrollListener();
-			}
-		// });
-	}
+	// this function is now superflous as we figured out why the listeners stopped.... (because it thought the command and alt keys were pressed sometimes...)
+	// _webMotionHelpers.restartListeners = function() {		
+	// 	// we will call this function whenever a user navigates to a new tab or to a new window
+	// 	_webMotionHelpers.terminateAllEventHandlers(true);
+	// 		_webMotionHelpers.initializeAlwaysOnKeyListeners(); 
+	// 		_webMotionHelpers.initializeAltKeyListener();
+	// 		if (!(_webMotionHelpers.isURLBlocked(window.location.href))) {
+	// 			_webMotionHelpers.initializeAlphaNumericKeyListeners();
+	// 			_webMotionHelpers.initializeFocusBlurListeners();
+	// 			_webMotionHelpers.initializeWindowScrollListener();
+	// 		}
+	// }
 
 	_webMotionHelpers.initializeStandardKeyListeners = function() {		
-		_webMotionHelpers.initializeSpecialKeyListeners();//cmd, shift, alt, etc.
+
+		_webMotionHelpers.initializeAltKeyListener();//cmd, shift, alt, etc.
 		_webMotionHelpers.initializeAlphaNumericKeyListeners();
 	}
 	_webMotionHelpers.initializeAlwaysOnKeyListeners = function() {		
 		// console.log('Initialized Always On Key listeners....');
 		$(document).on('keydown', function(e) {
 		//$(document).on('keydown', 'html', function(e) {
-			console.log('keydown..1');
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
-			console.log(pressedChar);
-			console.log(_webMotionHelpers.alwaysPermissibleShortcuts);
-			console.log(_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar));
 			if (_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) {
-				console.log('yeah!');
-				_webMotionHelpers.handleAlwaysPermissibleKeyPress(pressedChar);
+				_webMotionHelpers.handleAlwaysPermissibleKeyPress(pressedChar, e);
 			}
 		});
 	}
 
-	_webMotionHelpers.activateWebMotion = function(activateKeyListeners) {
+	_webMotionHelpers.activateWebMotion = function(activateStandardKeyListeners, activateAlwaysOnListeners) {
+		// if (killOldListeners) {
+		// 	_webMotionHelpers.terminateAllEventHandlers(true);
+		// }
 		_webMotionHelpers.DOMElemForEscaping = document.createElement("textarea");
 		_webMotionHelpers.initializeFocusBlurListeners();
 		_webMotionHelpers.initializeWindowScrollListener();
-		if (activateKeyListeners) {
-			_webMotionHelpers.initializeStandardKeyListeners();
+		if (activateAlwaysOnListeners) {
 			_webMotionHelpers.initializeAlwaysOnKeyListeners();
+		}
+		if (activateStandardKeyListeners) {
+			_webMotionHelpers.initializeStandardKeyListeners();
 		}
 		chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
 			_webMotionHelpers.viewPortHeight = response.height;
@@ -136,6 +132,7 @@ var webMotionHelpers = (function() {
 
 	_webMotionHelpers.terminateAllEventHandlers = function(killAlwaysOnShortcuts) {
 		$(document).off();
+		$(window).off(); //terminate the window scroll
 		if (!(killAlwaysOnShortcuts)) {
 			// reinstate the always permissible shortcuts
 			_webMotionHelpers.initializeAlwaysOnKeyListeners();
@@ -171,6 +168,7 @@ var webMotionHelpers = (function() {
 			clearTimeout($.data(this, 'scrollTimer'));
 			$.data(this, 'scrollTimer', setTimeout(function() {
         		// do something
+        		// alert();
         		_webMotionHelpers.processLinks();
         	}, 70));
 		});
@@ -203,13 +201,8 @@ var webMotionHelpers = (function() {
 	}
 
 
-	_webMotionHelpers.specialCharactersPressed = function() {
-		console.log('specialCharactersPressed');
-		console.log(_webMotionHelpers.ctrlPressed);
-		console.log(_webMotionHelpers.shiftPressed);
-		console.log(_webMotionHelpers.altPressed);
-		console.log(_webMotionHelpers.cmdPressed);
-		return ((_webMotionHelpers.ctrlPressed) || (_webMotionHelpers.shiftPressed) || (_webMotionHelpers.altPressed) || (_webMotionHelpers.cmdPressed));
+	_webMotionHelpers.specialCharactersPressed = function(event) {
+		return ((event.ctrlKey) || (event.shiftKey) || (event.altKey) || (event.metaKey));
 	}
 
 	_webMotionHelpers.resetKeyPresses = function () {
@@ -321,10 +314,16 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.initializeAlphaNumericKeyListeners = function() {
+		// alert(9);
 		$(document).on('keydown', function(e) {
+			// alert(8);
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
 			if (_webMotionHelpers.isAlphanumeric(pressedChar)) {
-				_webMotionHelpers.handleAlphaNumericKeyPress(pressedChar);
+				// alert(6);
+				_webMotionHelpers.handleAlphaNumericKeyPress(pressedChar, e);
+			}
+			else {
+				// alert(7);
 			}
 		});
 	}
@@ -347,20 +346,14 @@ var webMotionHelpers = (function() {
 		});
 	}
 
-	_webMotionHelpers.handleAlwaysPermissibleKeyPress = function(pressedChar) {
-		console.log('handleAlwaysPermissibleKeyPress');
-		console.log(pressedChar);
-		console.log(_webMotionHelpers.specialCharactersPressed());
-		if (!(_webMotionHelpers.specialCharactersPressed()) && _webMotionHelpers.noInputFieldsActive()) {
-			console.log('executing!!');
+	_webMotionHelpers.handleAlwaysPermissibleKeyPress = function(pressedChar, e) {
+		if (!(_webMotionHelpers.specialCharactersPressed(e)) && _webMotionHelpers.noInputFieldsActive()) {
 			switch(pressedChar)
 				{	
 					case 'h':
-					console.log('executing left!!');
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
 					break;
 					case 'l':
-					console.log('executing right!!');
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'right'}, function(response) {});
 					break;
 					default:
@@ -369,11 +362,11 @@ var webMotionHelpers = (function() {
 		}
 	}
 
-	_webMotionHelpers.handleAlphaNumericKeyPress = function(pressedChar) {
+	_webMotionHelpers.handleAlphaNumericKeyPress = function(pressedChar, e) {
 
 		if (_webMotionHelpers.noInputFieldsActive()) {
 
-			if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && !(_webMotionHelpers.specialCharactersPressed())) {
+			if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && !(_webMotionHelpers.specialCharactersPressed(e))) {
 				// user pressed one of the 'reserved keys', example hjkl
 
 				switch(pressedChar)
@@ -394,7 +387,7 @@ var webMotionHelpers = (function() {
 					break;
 				}
 			}	
-			else if (_webMotionHelpers.getKeymap(!(_webMotionHelpers.areRegularsHighlighted()))[pressedChar] != null && (!(_webMotionHelpers.specialCharactersPressed()))) {
+			else if (_webMotionHelpers.getKeymap(!(_webMotionHelpers.areRegularsHighlighted()))[pressedChar] != null && (!(_webMotionHelpers.specialCharactersPressed(e)))) {
 				// user pressed 'red' key (ie not one of the reserved keys)
 				// first push the key to the keylog
 				_webMotionHelpers.resetAllTimeOuts();
@@ -453,34 +446,34 @@ var webMotionHelpers = (function() {
 			}							
 		} 
 	}
-	_webMotionHelpers.initializeSpecialKeyListeners = function() {
-		$(document).on("keydown", function(e) {
-			if (e.keyCode == 91 || e.keyCode == 93) {
-				_webMotionHelpers.cmdPressed = true;	
-			}
-			else if (e.keyCode == 16) {
-				_webMotionHelpers.shiftPressed = true;
-			}
-			else if (e.keyCode == 17) {
-				_webMotionHelpers.ctrlPressed = true;
-			}
-			// altPressed is dealT with elsewhere
-		});
+	_webMotionHelpers.initializeAltKeyListener = function() {
+		// $(document).on("keydown", function(e) {
+		// 	if (e.keyCode == 91 || e.keyCode == 93) {
+		// 		_webMotionHelpers.cmdPressed = true;	
+		// 	}
+		// 	else if (e.keyCode == 16) {
+		// 		_webMotionHelpers.shiftPressed = true;
+		// 	}
+		// 	else if (e.keyCode == 17) {
+		// 		_webMotionHelpers.ctrlPressed = true;
+		// 	}
+		// 	// altPressed is dealT with elsewhere
+		// });
 
-		$(document).on("keyup", function(e) {
-			if (e.keyCode == 91 || e.keyCode == 93) {
-				_webMotionHelpers.cmdPressed = false;	
-			}
-			else if (e.keyCode == 16) {
-				_webMotionHelpers.shiftPressed = false;
-			}
-			else if (e.keyCode == 17) {
-				_webMotionHelpers.ctrlPressed = false;
-			}
-			else if (e.keyCode == 18) {
-				_webMotionHelpers.altPressed = false;
-			}
-		});
+		// $(document).on("keyup", function(e) {
+		// 	if (e.keyCode == 91 || e.keyCode == 93) {
+		// 		_webMotionHelpers.cmdPressed = false;	
+		// 	}
+		// 	else if (e.keyCode == 16) {
+		// 		_webMotionHelpers.shiftPressed = false;
+		// 	}
+		// 	else if (e.keyCode == 17) {
+		// 		_webMotionHelpers.ctrlPressed = false;
+		// 	}
+		// 	else if (e.keyCode == 18) {
+		// 		_webMotionHelpers.altPressed = false;
+		// 	}
+		// });
 
 		$(document).on("keydown", function(e) {
 			if (e.keyCode == 18) {
