@@ -14,7 +14,7 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.keyMap = {}; // maps the keys to the URLs
 	_webMotionHelpers.keyMapAlt = {}; 
 	_webMotionHelpers.takenAbbreviations = []; // maintains a list of all the user up letter / letter combos
-	_webMotionHelpers.takenAbbreviationsAlt = []; 
+	_webMotionHelpers.takenAbbreviationsAlt = [];
 	_webMotionHelpers.blockedRootDomains; 	
 	_webMotionHelpers.blockedFullDomains; 
 	_webMotionHelpers.blockedPages;
@@ -28,17 +28,41 @@ var webMotionHelpers = (function() {
 	//these we use these to close website, go back and forth between tabs, etc.
 	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'j', 'k'];
 	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
-	_webMotionHelpers.defaultForbiddenDomains = ['google.com', 'google.co.in', 'google.co.uk', 'google.fr', 'google.es', 'google.ru', 'google.jp', 'google.it', 'google.com.br', 'google.com.mx', 'google.ca', 'google.com.hk', 'google.de', 'gmail.com', 'facebook.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
+	_webMotionHelpers.defaultForbiddenDomains = ['google.com', 'google.co.in', 'google.co.uk', 'google.fr', 'google.es', 'google.ru', 'google.jp', 'google.it', 'google.com.br', 'google.com.mx', 'google.ca', 'google.com.hk', 'google.de', 'gmail.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
 
+	_webMotionHelpers.restartListeners = function() {		
+		// we will call this function whenever a user navigates to a new tab or to a new window
+		_webMotionHelpers.terminateAllEventHandlers(true);
+		// webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks)
+		// alert(_webMotionHelpers.blockedRootDomains);
+		// console.log('restarted...');
+		// $(document).ready(function() {
+			_webMotionHelpers.initializeAlwaysOnKeyListeners(); 
+			_webMotionHelpers.initializeSpecialKeyListeners();
+			if (!(_webMotionHelpers.isURLBlocked(window.location.href))) {
+				// alert(2);
+				_webMotionHelpers.initializeAlphaNumericKeyListeners();
+				_webMotionHelpers.initializeFocusBlurListeners();
+				_webMotionHelpers.initializeWindowScrollListener();
+			}
+		// });
+	}
 
 	_webMotionHelpers.initializeStandardKeyListeners = function() {		
 		_webMotionHelpers.initializeSpecialKeyListeners();//cmd, shift, alt, etc.
 		_webMotionHelpers.initializeAlphaNumericKeyListeners();
 	}
 	_webMotionHelpers.initializeAlwaysOnKeyListeners = function() {		
-		$(document).on('keydown', 'html', function(e) {
+		// console.log('Initialized Always On Key listeners....');
+		$(document).on('keydown', function(e) {
+		//$(document).on('keydown', 'html', function(e) {
+			console.log('keydown..1');
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
+			console.log(pressedChar);
+			console.log(_webMotionHelpers.alwaysPermissibleShortcuts);
+			console.log(_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar));
 			if (_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) {
+				console.log('yeah!');
 				_webMotionHelpers.handleAlwaysPermissibleKeyPress(pressedChar);
 			}
 		});
@@ -180,6 +204,11 @@ var webMotionHelpers = (function() {
 
 
 	_webMotionHelpers.specialCharactersPressed = function() {
+		console.log('specialCharactersPressed');
+		console.log(_webMotionHelpers.ctrlPressed);
+		console.log(_webMotionHelpers.shiftPressed);
+		console.log(_webMotionHelpers.altPressed);
+		console.log(_webMotionHelpers.cmdPressed);
 		return ((_webMotionHelpers.ctrlPressed) || (_webMotionHelpers.shiftPressed) || (_webMotionHelpers.altPressed) || (_webMotionHelpers.cmdPressed));
 	}
 
@@ -292,7 +321,7 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.initializeAlphaNumericKeyListeners = function() {
-		$(document).on('keydown', 'html', function(e) {
+		$(document).on('keydown', function(e) {
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
 			if (_webMotionHelpers.isAlphanumeric(pressedChar)) {
 				_webMotionHelpers.handleAlphaNumericKeyPress(pressedChar);
@@ -319,13 +348,19 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.handleAlwaysPermissibleKeyPress = function(pressedChar) {
+		console.log('handleAlwaysPermissibleKeyPress');
+		console.log(pressedChar);
+		console.log(_webMotionHelpers.specialCharactersPressed());
 		if (!(_webMotionHelpers.specialCharactersPressed()) && _webMotionHelpers.noInputFieldsActive()) {
+			console.log('executing!!');
 			switch(pressedChar)
 				{	
 					case 'h':
+					console.log('executing left!!');
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
 					break;
 					case 'l':
+					console.log('executing right!!');
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'right'}, function(response) {});
 					break;
 					default:

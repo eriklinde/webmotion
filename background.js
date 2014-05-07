@@ -7,6 +7,7 @@ var blockedFullDomains;
 var blockedPages;
 // chrome.storage.sync.clear(function() {});
 
+
 chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPages'], function(items) {
 	if (items.blockedRootDomains === undefined || items.blockedFullDomains === undefined || items.blockedPages === undefined) {
 		// The very first time a user uses WebMotion
@@ -23,6 +24,15 @@ chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPag
 		blockedPages = items.blockedPages;
 	}
 });	
+
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+	chrome.storage.local.get(function(response) {
+		if (response.active) {
+			chrome.tabs.executeScript(activeInfo.tabId, {code: "webMotionHelpers.restartListeners();"}, function() {});
+		}
+	});
+});
 
 
 chrome.storage.onChanged.addListener(function(changes, areaName) {
