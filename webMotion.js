@@ -17,22 +17,15 @@
 
 (function () {
 	
-	// Initializes certain listeners needed
-	// console.log(webMotionHelpers.twoLevelTLDs);
-	// alert(webMotionHelpers.extractRootDomainFromURL('http://www.xxx.co.uk/wfewf/wef/wefew?32f2ef'));
-	// console.log(webMotionHelpers.isValidDomain('news.ww-w.cn-xN.com.msemu'));
-	
+	// Initializes certain listeners needed	
 	chrome.storage.local.get(function(response) {
 		
 		if (response.active) {
 			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
-				// console.log('OBTAINED BLOCKLIST');
-				// console.log(response);
 				webMotionHelpers.blockedRootDomains = response.blockedRootDomains;
 				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
 				webMotionHelpers.blockedPages = response.blockedPages;
 				var urlBlocked = webMotionHelpers.isURLBlocked(window.location.href);
-				// alert();
 				if (!(urlBlocked)) {
 					// initialize the listeners as soon as we can (ie dont wait for document.ready)
 					webMotionHelpers.initializeStandardKeyListeners();
@@ -43,17 +36,10 @@
 				}
 				
 				$(document).ready(function() {
-
 					// $('body').html('');
 					// $('body').append("<p><a href='rigbkre'>BB <em>A</em>AAA</a></p><p><a href='rigbkre'>ABA<em>A</em></a></p><p><a href='rigbkre'><em>A&C&</em>AAA</a></p><p><a id='msee' href='rigbkre'>A'D</a></p><p><a href='i3ugh34u'>&B&he&lt;j!&</a></p>");
-					// alert($('#msee').html());
-					// alert(333);
 					if (!(urlBlocked)) {
-						// setTimeout(function() {
-							// alert();
-							webMotionHelpers.activateWebMotion(false);	
-						// }, 2000);
-						
+						webMotionHelpers.activateWebMotion(false);							
 					}
 				});
 

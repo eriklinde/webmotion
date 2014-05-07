@@ -7,9 +7,6 @@
     chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(blockList) {
       chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT}, function(tabs) {
         currentUrl = tabs[0].url;
-        // console.log('Ola lindholm');
-        // console.log(tabs[0]);
-        // console.log(currentUrl);
         
         // create a fake link in order to make use of link.pathname and search methods.
         var a = document.createElement('a');
@@ -155,7 +152,6 @@ function checkboxTrigger(event) {
 
 function shortenString(str) {
   if (str.length > 40) {
-    // return str.slice(0,14) + ' ... ' + str.slice(-15);    
     return str.slice(0,36) + '...';
   }
   else {
