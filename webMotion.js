@@ -8,7 +8,10 @@
 // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 // den jävulen använder always on grejern på google docs. Det ska den inte göra!! Fast nu verkar det som att det funkar.
 
-
+// Chris feedback: 
+// wanna use the arrow keys instead.... shift up / down = page up, page down. shift left / right arrow = switch between tabs. 
+// left / right backward / forward; shift left / right = switch tabs
+// if image... insert a link to that too, could be numbers....
 
 // REMAINING TODO THINGS
 // Make sure it works here: http://www.teslamotors.com/blog/when-life-gives-you-lemons
@@ -34,18 +37,24 @@
 				webMotionHelpers.blockedFullDomains = response.blockedFullDomains;
 				webMotionHelpers.blockedPages = response.blockedPages;
 				var urlBlocked = webMotionHelpers.isURLBlocked(window.location.href);
-				if (!(urlBlocked)) {
+				// if (!(urlBlocked)) {
 					// initialize the listeners as soon as we can (ie dont wait for document.ready)
 					webMotionHelpers.initializeStandardKeyListeners();
 					webMotionHelpers.initializeAlwaysOnKeyListeners();
-				}
-				else {
-					webMotionHelpers.initializeAlwaysOnKeyListeners(); // h & l (move between tabs)
-				}
+				// }
+				// else {
+					// webMotionHelpers.initializeAlwaysOnKeyListeners(); // h & l (move between tabs)
+				// }
 				
 				$(document).ready(function() {
 					// $('body').html('');
 					// $('body').append("<p><a href='rigbkre'>BB <em>A</em>AAA</a></p><p><a href='rigbkre'>ABA<em>A</em></a></p><p><a href='rigbkre'><em>A&C&</em>AAA</a></p><p><a id='msee' href='rigbkre'>A'D</a></p><p><a href='i3ugh34u'>&B&he&lt;j!&</a></p>");
+					if (window.location.href == 'http://www.webmotion.info/') {
+
+						$('#highlighted').replaceWith('r');
+						// $('#highlighted').remove();
+
+					}
 					if (!(urlBlocked)) {
 						webMotionHelpers.activateWebMotion(false, false);							
 					}

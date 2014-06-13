@@ -1,23 +1,25 @@
 {
   "manifest_version": 2,
+  "version": "0.1",
     
   "background": {
     "scripts": ["jQuery.js", "webMotionHelpers.js", "background.js"] 
   },
 
   "name": "WebMotion",
-  "version": "1.0",
-  "description": "Simple, mouseless web browsing",
+  "description": "Browse the web with your keyboard",
   "permissions": [ 
     "tabs", "storage", "http://*/", "https://*/" 
   ],
-
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+    },
   "browser_action": {
     "default_icon": {                    
       "19": "icon19.png",         
-      "38": "icon38.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "38": "icon38.png"
     },
     "default_title": "WebMotion",
     "default_popup": "popup.html"

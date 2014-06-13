@@ -26,8 +26,8 @@ var webMotionHelpers = (function() {
 	//the HTML entities of &, <, >, " and SPACE.  these will not be made into clickable letters.
 	_webMotionHelpers.reservedHTMLCharacters = ["&amp;", "&lt;", "&gt;", "&quot;", "&nbsp;"];
 	//these we use these to close website, go back and forth between tabs, etc.
-	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'j', 'k'];
-	_webMotionHelpers.alwaysPermissibleShortcuts = ['h', 'l']; // even in forbidden domains (basically just left and right)
+	_webMotionHelpers.reservedShortcuts = ['x', 'b', 'j', 'k', 'h', 'l'];
+	_webMotionHelpers.alwaysPermissibleShortcuts = []; // these keys will work even in forbidden domains
 	_webMotionHelpers.defaultForbiddenDomains = ['google.com', 'google.co.in', 'google.co.uk', 'google.fr', 'google.es', 'google.ru', 'google.jp', 'google.it', 'google.com.br', 'google.com.mx', 'google.ca', 'google.com.hk', 'google.de', 'gmail.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
 
 	// this function is now superflous as we figured out why the listeners stopped.... (because it thought the command and alt keys were pressed sometimes...)
@@ -350,12 +350,6 @@ var webMotionHelpers = (function() {
 		if (!(_webMotionHelpers.specialCharactersPressed(e)) && _webMotionHelpers.noInputFieldsActive()) {
 			switch(pressedChar)
 				{	
-					case 'h':
-					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
-					break;
-					case 'l':
-					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'right'}, function(response) {});
-					break;
 					default:
 					break;
 				}
@@ -363,14 +357,21 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.handleAlphaNumericKeyPress = function(pressedChar, e) {
-
-		if (_webMotionHelpers.noInputFieldsActive()) {
-
-			if (_webMotionHelpers.reservedShortcuts.containsString(pressedChar) && !(_webMotionHelpers.specialCharactersPressed(e))) {
-				// user pressed one of the 'reserved keys', example hjkl
-
+		if (_webMotionHelpers.noInputFieldsActive()) {			
+			var siteAllowed = !(_webMotionHelpers.isURLBlocked(window.location.href));
+			var noSpecialKeys = !(_webMotionHelpers.specialCharactersPressed(e));
+			var ctrlAndAltKeys = e.ctrlKey && e.altKey;
+			// Operation will be permitted (ie reserved keys will be handled) if site is allowed and 
+			var handleReservedKeys = _webMotionHelpers.reservedShortcuts.containsString(pressedChar) && ((siteAllowed && noSpecialKeys || ctrlAndAltKeys) || (!(siteAllowed) && ctrlAndAltKeys))
+			if (handleReservedKeys) {
 				switch(pressedChar)
 				{	
+					case 'h':
+					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
+					break;
+					case 'l':
+					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'right'}, function(response) {});
+					break;
 					case 'x':
 					chrome.runtime.sendMessage({msg: 'close_selected_tab'}, function(response) {});
 					break;
