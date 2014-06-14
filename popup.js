@@ -63,7 +63,7 @@
           }
 
           chrome.storage.local.get(function(response) {
-              if (!(response.active)) {
+              if ((response.inactive)) {
                 $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none');
               }
               else {
@@ -74,8 +74,8 @@
         })});
     });       
 
-    chrome.storage.local.get('active', function(response) {
-      if (response.active) {
+    chrome.storage.local.get('inactive', function(response) {
+      if (!(response.inactive)) {
         $('#activation-switch').addClass('js-checkbox-checked');
         $('#on-off-statement b').text('ON');
         $('#on-off-statement b').addClass('green');
@@ -102,7 +102,7 @@ function checkboxTrigger(event) {
     // user wants to de-activate WebMotion
     
     if (type == 'activation-switch') {
-      storage.set({active: false}, function() {
+      storage.set({inactive: true}, function() {
         $('#on-off-statement b').text('OFF');
         $('#on-off-statement b').removeClass('green');
         
@@ -127,7 +127,7 @@ function checkboxTrigger(event) {
   else {      
     if (type == 'activation-switch') {
       // user wants to activate WebMotion
-      storage.set({active: true}, function() {
+      storage.set({inactive: false}, function() {
         $('#on-off-statement b').text('ON');
         $('#on-off-statement b').addClass('green');        
       });

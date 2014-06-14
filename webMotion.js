@@ -30,7 +30,7 @@
 	// Initializes certain listeners needed	
 	chrome.storage.local.get(function(response) {
 		
-		if (response.active) {
+		if (!(response.inactive)) {
 			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
 				webMotionHelpers.terminateAllEventHandlers(true);
 				webMotionHelpers.blockedRootDomains = response.blockedRootDomains;
