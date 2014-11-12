@@ -1,7 +1,9 @@
 /**
 
 Part of the WebMotion (http://www.webmotion.info/) Chrome Extension,
-built by Erik Linde
+built by Erik Linde. WebMotion highlights one letter in every link, and lets
+users follow that link by pressing it on their keyboard
+(a.k.a. mouseless web surfing)
 
 Initiates WebMotion when user goes to a new website.
 

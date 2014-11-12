@@ -1,4 +1,19 @@
-// Runs when chrome starts.
+/**
+
+Part of the WebMotion (http://www.webmotion.info/) Chrome Extension,
+built by Erik Linde. WebMotion highlights one letter in every link, and lets
+users follow that link by pressing it on their keyboard
+(a.k.a. mouseless web surfing)
+
+This file contains the code for the popup menu that goes in the web browser toolbar.
+Let's users enable / disable WebMotion, as well as disable WebMotion on certain sites
+
+Runs when chrome starts; contains the code to communicate with Chrome's background services.
+
+*/
+
+
+
 
 // these will be fetched from Chrome Storage when Chrome launches, and only changed
 // upon callback when we update the storage (ie we don't have to keep calling the storage. Can keep them locally.)

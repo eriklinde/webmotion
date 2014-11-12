@@ -1,6 +1,13 @@
 /**
-Code for the popup menu that goes in the web browser toolbar.
+
+Part of the WebMotion (http://www.webmotion.info/) Chrome Extension,
+built by Erik Linde. WebMotion highlights one letter in every link, and lets
+users follow that link by pressing it on their keyboard
+(a.k.a. mouseless web surfing)
+
+This file contains the code for the popup menu that goes in the web browser toolbar.
 Let's users enable / disable WebMotion, as well as disable WebMotion on certain sites
+
 */
 
 
