@@ -1,3 +1,9 @@
+/**
+Code for the popup menu that goes in the web browser toolbar.
+Let's users enable / disable WebMotion, as well as disable WebMotion on certain sites
+*/
+
+
 (function () {
 
   var storage = chrome.storage.local;
@@ -7,24 +13,24 @@
     chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(blockList) {
       chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT}, function(tabs) {
         currentUrl = tabs[0].url;
-        
-        // create a fake link in order to make use of link.pathname and search methods.
+
+        // create a "fake" link in order to make use of link.pathname and search methods.
         var a = document.createElement('a');
         a.href = currentUrl;
         var path = a.pathname + a.search; // /file.php?id=1
-        
+
         chrome.runtime.sendMessage({ msg : 'extract_domain', data: tabs[0].url }, function(domains) {
 
-          var nakedDomainPrefix = '*.';          
+          var nakedDomainPrefix = '*.';
           if (domains.fullDomain == domains.rootDomain) {
-            // we dont' want to show both 
+            // we dont' want to show both
             // mashable.com
             // and *.mashable.com. Also, we dont' want the *. prefix before the root domain.
             $('#block-full-domain-container').hide();
             nakedDomainPrefix = '';
           }
           else {
-            $('#block-full-domain-container').show(); 
+            $('#block-full-domain-container').show();
           }
 
           if (path == '' || path == '/') {
@@ -67,12 +73,12 @@
                 $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none');
               }
               else {
-                $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto'); 
+                $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto');
               }
-          });      
+          });
 
         })});
-    });       
+    });
 
     chrome.storage.local.get('inactive', function(response) {
       if (!(response.inactive)) {
@@ -92,27 +98,27 @@
       checkboxTrigger(e);
     });
 
-    
+
   });
 
 
-function checkboxTrigger(event) {   
+function checkboxTrigger(event) {
   var type = $(event.target).attr('data-type');
-  if ($(event.target).hasClass('js-checkbox-checked')) {      
+  if ($(event.target).hasClass('js-checkbox-checked')) {
     // user wants to de-activate WebMotion
-    
+
     if (type == 'activation-switch') {
       storage.set({inactive: true}, function() {
         $('#on-off-statement b').text('OFF');
         $('#on-off-statement b').removeClass('green');
-        
+
       });
-      $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none'); 
+      $('#block-options-wrapper').css('opacity','0.5').css('pointer-events','none');
       chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
       chrome.runtime.sendMessage({msg: 'change_webmotion_active_status', active: false}, function(response) {});
     }
     else if (type == 'block-page') {
-      chrome.runtime.sendMessage({msg: 'remove_from_block_list', type: 'page'}, function(response) {});      
+      chrome.runtime.sendMessage({msg: 'remove_from_block_list', type: 'page'}, function(response) {});
     }
     else if (type == 'block-full-domain') {
       chrome.runtime.sendMessage({msg: 'remove_from_block_list', type: 'fullDomain'}, function(response) {});
@@ -124,19 +130,19 @@ function checkboxTrigger(event) {
     $(event.target).removeClass('js-checkbox-checked');
     $(event.target).addClass('js-checkbox-unchecked');
   }
-  else {      
+  else {
     if (type == 'activation-switch') {
       // user wants to activate WebMotion
       storage.set({inactive: false}, function() {
         $('#on-off-statement b').text('ON');
-        $('#on-off-statement b').addClass('green');        
+        $('#on-off-statement b').addClass('green');
       });
-      $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto'); 
+      $('#block-options-wrapper').css('opacity','1').css('pointer-events','auto');
       chrome.runtime.sendMessage({msg: 'update_all_icons', active: true}, function(response) {});
       chrome.runtime.sendMessage({msg: 'change_webmotion_active_status', active: true}, function(response) {});
     }
     else if (type == 'block-page') {
-      chrome.runtime.sendMessage({msg: 'add_to_block_list', type: 'page'}, function(response) {});      
+      chrome.runtime.sendMessage({msg: 'add_to_block_list', type: 'page'}, function(response) {});
     }
     else if (type == 'block-full-domain') {
       chrome.runtime.sendMessage({msg: 'add_to_block_list', type: 'fullDomain'}, function(response) {});

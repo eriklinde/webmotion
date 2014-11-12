@@ -2,18 +2,17 @@
 
 // these will be fetched from Chrome Storage when Chrome launches, and only changed
 // upon callback when we update the storage (ie we don't have to keep calling the storage. Can keep them locally.)
-var blockedRootDomains; 
-var blockedFullDomains; 
+var blockedRootDomains;
+var blockedFullDomains;
 var blockedPages;
-// chrome.storage.sync.clear(function() {});
 
 
 chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPages'], function(items) {
 	if (items.blockedRootDomains === undefined || items.blockedFullDomains === undefined || items.blockedPages === undefined) {
 		// The very first time a user uses WebMotion
-		chrome.storage.sync.set({'blockedRootDomains': webMotionHelpers.defaultForbiddenDomains, 
-			'blockedFullDomains': [], 
-			'blockedPages': []}, 
+		chrome.storage.sync.set({'blockedRootDomains': webMotionHelpers.defaultForbiddenDomains,
+			'blockedFullDomains': [],
+			'blockedPages': []},
 			function() {}
 		);
 	}
@@ -23,16 +22,7 @@ chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPag
 		blockedFullDomains = items.blockedFullDomains;
 		blockedPages = items.blockedPages;
 	}
-});	
-
-
-// chrome.tabs.onActivated.addListener(function(activeInfo) {
-// 	chrome.storage.local.get(function(response) {
-// 		if (response.active) {
-// 			chrome.tabs.executeScript(activeInfo.tabId, {code: "webMotionHelpers.restartListeners();"}, function() {});
-// 		}
-// 	});
-// });
+});
 
 
 chrome.storage.onChanged.addListener(function(changes, areaName) {
@@ -44,7 +34,7 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
 	}
 	if (changes.hasOwnProperty('blockedPages') && changes.blockedPages.hasOwnProperty('newValue')) {
 		blockedPages = changes.blockedPages.newValue;
-	}	
+	}
 })
 
 
@@ -63,14 +53,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			chrome.tabs.remove(tab.id);
 		});
 	}
-	else if (request.msg == 'add_to_block_list') {	
+	else if (request.msg == 'add_to_block_list') {
 		chrome.tabs.getSelected(function(tab) {
 			if (request.type == 'fullDomain') {
 				if (!(blockedFullDomains.containsString(webMotionHelpers.extractFullDomainFromURL(tab.url)))) {
 					// only add if it's not already there
 					blockedFullDomains.push(webMotionHelpers.extractFullDomainFromURL(tab.url));
 					deactivateRelevantTabsAfterAddingToBlockList({'url' : webMotionHelpers.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'})
-					chrome.storage.sync.set({'blockedFullDomains': blockedFullDomains}, function() {});					
+					chrome.storage.sync.set({'blockedFullDomains': blockedFullDomains}, function() {});
 				}
 			}
 			else if (request.type == 'rootDomain') {
@@ -78,7 +68,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					// only add if it's not already there
 					blockedRootDomains.push(webMotionHelpers.extractRootDomainFromURL(tab.url));
 					deactivateRelevantTabsAfterAddingToBlockList({'url' : webMotionHelpers.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'})
-					chrome.storage.sync.set({'blockedRootDomains': blockedRootDomains}, function() {});					
+					chrome.storage.sync.set({'blockedRootDomains': blockedRootDomains}, function() {});
 				}
 			}
 			else if (request.type == 'page') {
@@ -86,12 +76,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					// only add if it's not already there
 					blockedPages.push(tab.url);
 					deactivateRelevantTabsAfterAddingToBlockList({'url' : tab.url, 'type' : 'page'})
-					chrome.storage.sync.set({'blockedPages': blockedPages}, function() {});				
+					chrome.storage.sync.set({'blockedPages': blockedPages}, function() {});
 				}
-			}			
+			}
 		});
 	}
-	else if (request.msg == 'remove_from_block_list') {	
+	else if (request.msg == 'remove_from_block_list') {
 		chrome.tabs.getSelected(function(tab) {
 			if (request.type == 'fullDomain') {
 				if ((blockedFullDomains.containsString(webMotionHelpers.extractFullDomainFromURL(tab.url)))) {
@@ -101,7 +91,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					}
 					chrome.storage.sync.set({'blockedFullDomains': blockedFullDomains}, function() {
 						activateRelevantTabsAfterRemovingFromBlockList({'url' : webMotionHelpers.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'});
-					});					
+					});
 				}
 			}
 			else if (request.type == 'rootDomain') {
@@ -109,10 +99,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					var index = blockedRootDomains.indexOf(webMotionHelpers.extractRootDomainFromURL(tab.url));
 					if (index > -1) {
  					   blockedRootDomains.splice(index, 1);
-					}					
+					}
 					chrome.storage.sync.set({'blockedRootDomains': blockedRootDomains}, function() {
 						activateRelevantTabsAfterRemovingFromBlockList({'url' : webMotionHelpers.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'});
-					});					
+					});
 				}
 			}
 			else if (request.type == 'page') {
@@ -120,12 +110,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					var index = blockedPages.indexOf(tab.url);
 					if (index > -1) {
  					   blockedPages.splice(index, 1);
-					}					
+					}
 					chrome.storage.sync.set({'blockedPages': blockedPages}, function() {
 						activateRelevantTabsAfterRemovingFromBlockList({'url' : tab.url, 'type' : 'page'});
-					});				
+					});
 				}
-			}			
+			}
 		});
 	}
 
@@ -136,15 +126,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 				chrome.tabs.update(currentTab.id, {active: false, selected: false, highlighted: false});
 				if (request.direction == 'left') {
 					if (currentTab.index == 0) {
-						chrome.tabs.update(tabCollection[tabCollection.length - 1].id, {active: true, selected: true, highlighted: true});					
+						chrome.tabs.update(tabCollection[tabCollection.length - 1].id, {active: true, selected: true, highlighted: true});
 					}
 					else {
-						chrome.tabs.update(tabCollection[currentTab.index - 1].id, {active: true, selected: true, highlighted: true});						
+						chrome.tabs.update(tabCollection[currentTab.index - 1].id, {active: true, selected: true, highlighted: true});
 					}
 				}
 				else if (request.direction == 'right') {
 					if (currentTab.index == tabCollection.length - 1) {
-						chrome.tabs.update(tabCollection[0].id, {active: true, selected: true, highlighted: true});						
+						chrome.tabs.update(tabCollection[0].id, {active: true, selected: true, highlighted: true});
 					}
 					else {
 						chrome.tabs.update(tabCollection[currentTab.index + 1].id, {active: true, selected: true, highlighted: true});
@@ -171,7 +161,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 					else {
 						// set to black and white version (inactive)
 						chrome.browserAction.setIcon({path:"icon38_bw.png", tabId:windowCollection[i].tabs[j].id});
-					}				
+					}
 				}
 			}
 		});
@@ -182,27 +172,24 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 				for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 					if (request.active) {
 						var localBlocks = new Object();
-						localBlocks.blockedRootDomains = blockedRootDomains; 
-						localBlocks.blockedFullDomains = blockedFullDomains; 
-						localBlocks.blockedPages = blockedPages; 
+						localBlocks.blockedRootDomains = blockedRootDomains;
+						localBlocks.blockedFullDomains = blockedFullDomains;
+						localBlocks.blockedPages = blockedPages;
 
 						if (!(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
 							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, true);"}, function() {});
 						}
 						else {
 							// if blocked, just initialize the h, l keys.
-							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.initializeAlwaysOnKeyListeners();"}, function() {});							
+							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.initializeAlwaysOnKeyListeners();"}, function() {});
 						}
 					}
 					else {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(true);"}, function() {});
-					}					
+					}
 				}
-			}		
+			}
 		});
-	}
-	else if (request.msg == 'print_time') {
-		// console.log(Date.now()); 
 	}
 	else if (request.msg == 'get_local_blocks') {
 		// this is extremely quick as we do not go via the local storage.
@@ -232,7 +219,7 @@ function deactivateRelevantTabsAfterAddingToBlockList(urlObj) {
 					}
 				}
 			}
-		}		
+		}
 	});
 }
 
@@ -242,9 +229,9 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 			for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 				// we need to manually supply the blocklist to webMotionHelpers as it may not have been initialized.
 				var localBlocks = new Object();
-				localBlocks.blockedRootDomains = blockedRootDomains; 
-				localBlocks.blockedFullDomains = blockedFullDomains; 
-				localBlocks.blockedPages = blockedPages; 
+				localBlocks.blockedRootDomains = blockedRootDomains;
+				localBlocks.blockedFullDomains = blockedFullDomains;
+				localBlocks.blockedPages = blockedPages;
 				if (urlObj.type == 'fullDomain') {
 					if (webMotionHelpers.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
@@ -261,7 +248,7 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 					}
 				}
 			}
-		}		
+		}
 	});
 }
 

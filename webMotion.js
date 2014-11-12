@@ -1,5 +1,14 @@
+/**
+
+Part of the WebMotion (http://www.webmotion.info/) Chrome Extension,
+built by Erik Linde
+
+Initiates WebMotion when user goes to a new website.
+
+*/
+
 (function () {
-	chrome.storage.local.get(function(response) {		
+	chrome.storage.local.get(function(response) {
 		if (!(response.inactive)) {
 			chrome.runtime.sendMessage({msg: 'get_local_blocks'}, function(response) {
 				webMotionHelpers.terminateAllEventHandlers(true);
@@ -14,18 +23,18 @@
 						$('#highlighted').replaceWith('r');
 					}
 					if (!(urlBlocked)) {
-						webMotionHelpers.activateWebMotion(false, false);							
+						webMotionHelpers.activateWebMotion(false, false);
 					}
 				});
 
-			});				
+			});
 		}
 		else {
 			chrome.runtime.sendMessage({msg: 'update_all_icons', active: false}, function(response) {});
 		}
 	});
 
-	// more "readable" versions of basic javascript functions
+	// Syntactic sugar
 	String.prototype.replaceAt=function(index, character) {
 		return this.substr(0, index) + character + this.substr(index+1);
 	}

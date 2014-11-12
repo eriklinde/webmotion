@@ -1,3 +1,13 @@
+/**
+
+Part of the WebMotion (http://www.webmotion.info/) Chrome Extension,
+built by Erik Linde
+
+Contains the core functionality of WebMotion; ie finding an highlighting letters in links; listening to keyboard presses, etc.
+
+*/
+
+
 var webMotionHelpers = (function() {
 
 	var _webMotionHelpers = {};
@@ -7,19 +17,19 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.shiftPressed = false;
 	_webMotionHelpers.altPressed = false;
 	_webMotionHelpers.cmdPressed = false;
-	_webMotionHelpers.premium = false;
+	_webMotionHelpers.premium = true;
 	// the color letters will be highlighted in (red)
-	_webMotionHelpers.standardColor = '#e84c3d'; 
+	_webMotionHelpers.standardColor = '#e84c3d';
 	// an alternative color (blue) in case link is already read
-	_webMotionHelpers.alternativeColor = '#5280bb'; 
+	_webMotionHelpers.alternativeColor = '#5280bb';
 	_webMotionHelpers.viewPortHeight;
 	_webMotionHelpers.viewPortWidth;
-	_webMotionHelpers.keyMap = {}; 
-	_webMotionHelpers.keyMapAlt = {}; 
-	_webMotionHelpers.takenAbbreviations = []; 
+	_webMotionHelpers.keyMap = {};
+	_webMotionHelpers.keyMapAlt = {};
+	_webMotionHelpers.takenAbbreviations = [];
 	_webMotionHelpers.takenAbbreviationsAlt = [];
-	_webMotionHelpers.blockedRootDomains; 	
-	_webMotionHelpers.blockedFullDomains; 
+	_webMotionHelpers.blockedRootDomains;
+	_webMotionHelpers.blockedFullDomains;
 	_webMotionHelpers.blockedPages;
 	_webMotionHelpers.twoLevelTLDs;
 	_webMotionHelpers.DOMElemForEscaping;
@@ -32,11 +42,11 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.alwaysPermissibleShortcuts = []; // these keys will work even in forbidden domains
 	_webMotionHelpers.defaultForbiddenDomains = ['facebook.com', 'google.com', 'google.co.in', 'google.co.uk', 'google.fr', 'google.es', 'google.ru', 'google.jp', 'google.it', 'google.com.br', 'google.com.mx', 'google.ca', 'google.com.hk', 'google.de', 'gmail.com', 'twitter.com', , 'notezilla.io', 'notezilla.info', '0.0.0.0'];
 
-	_webMotionHelpers.initializeStandardKeyListeners = function() {		
+	_webMotionHelpers.initializeStandardKeyListeners = function() {
 		_webMotionHelpers.initializeAltKeyListener();//cmd, shift, alt, etc.
 		_webMotionHelpers.initializeAlphaNumericKeyListeners();
 	}
-	_webMotionHelpers.initializeAlwaysOnKeyListeners = function() {		
+	_webMotionHelpers.initializeAlwaysOnKeyListeners = function() {
 		$(document).on('keydown', function(e) {
 			var pressedChar = String.fromCharCode(e.keyCode).toLowerCase();
 			if (_webMotionHelpers.alwaysPermissibleShortcuts.containsString(pressedChar)) {
@@ -59,13 +69,13 @@ var webMotionHelpers = (function() {
 			_webMotionHelpers.viewPortHeight = response.height;
 			_webMotionHelpers.viewPortWidth = response.width;
 			_webMotionHelpers.processLinks();
-		});	
+		});
 	}
 
-	_webMotionHelpers.extractFullDomainFromURL = function(url) {		
+	_webMotionHelpers.extractFullDomainFromURL = function(url) {
 		// Example: returns "www.stackoverflow.com"
 		// from "http://www.stackoverflow.com/questions/25413287/jquery-css-injection-in-facebook-using-chrome-extension"
-		if(url.search(/^https?\:\/\//) != -1) {    		
+		if(url.search(/^https?\:\/\//) != -1) {
 			url = url.match(/^https?\:\/\/([^\/?#]+)(?:[\/?#]|$)/i, "");
 		}
 		else {
@@ -76,14 +86,14 @@ var webMotionHelpers = (function() {
 		}
 		else {
 			return null;
-		}    	
+		}
 	}
 
 	_webMotionHelpers.extractRootDomainFromURL = function(url) {
 		// Example: returns "stackoverflow.com"
 		// from "http://www.stackoverflow.com/questions/25413287/jquery-css-injection-in-facebook-using-chrome-extension"
 		// NOTE: this can handle 2 level TLDs, (co.uk, etc), but not 3 levels!
-		// list of 2 level TLDs from: 
+		// list of 2 level TLDs from:
 		// http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1
 		var fullDomain = _webMotionHelpers.extractFullDomainFromURL(url);
 		if (fullDomain == null) {
@@ -91,7 +101,7 @@ var webMotionHelpers = (function() {
 		}
 		else {
 			var lastTwoSegments = fullDomain.match(/[a-z0-9]+\.[a-z0-9]+$/i)[0];
-			var nbrSegmentsNeeded = 2; 
+			var nbrSegmentsNeeded = 2;
 			if (_webMotionHelpers.twoLevelTLDs.containsString(lastTwoSegments)) {
 				nbrSegmentsNeeded = 3;
 			}
@@ -104,9 +114,9 @@ var webMotionHelpers = (function() {
 		}
 	}
 
-	_webMotionHelpers.isValidDomain = function(domain) {		
+	_webMotionHelpers.isValidDomain = function(domain) {
 		return (domain.match(/^(?:[\-a-z0-9]+\.)+[a-z]{2,6}$/i) != null);
-		
+
 	}
 
 	_webMotionHelpers.deactivateWebMotion = function(killAlwaysOnShortcuts) {
@@ -128,11 +138,11 @@ var webMotionHelpers = (function() {
 	_webMotionHelpers.gatherLegitimateLinks = function() {
 		// Extracts all links from a web page
 		var modifiableLinks = [];
-		$('a:visible').each(function(index) {				
+		$('a:visible').each(function(index) {
 			if (_webMotionHelpers.isLinkLegitimate($(this))) {
 				var link = {linkObj:$(this), fontSize: parseInt($(this).css('font-size')), shortCut:"", originalOrder:index, absoluteURL: $(this).prop("href")};
 				modifiableLinks.push(link);
-			}		
+			}
 		});
 		return modifiableLinks;
 	}
@@ -145,7 +155,7 @@ var webMotionHelpers = (function() {
 				return x < y ? -1 : x > y ? 1 : 0;
 			}
 			return b.fontSize - a.fontSize;
-		});	
+		});
 		return modifiableLinks;
 	}
 
@@ -169,7 +179,7 @@ var webMotionHelpers = (function() {
 			// Gather all the links we (potentially) need to modify
 			_webMotionHelpers.modifiableLinks = _webMotionHelpers.gatherLegitimateLinks();
 			_webMotionHelpers.modifiableLinks = _webMotionHelpers.sortLinkSetByFontSize(_webMotionHelpers.modifiableLinks);
-			// process each link (ie, figure out which letter to be the shortcut, alter the underlying html (ie make one letter red), etc)			
+			// process each link (ie, figure out which letter to be the shortcut, alter the underlying html (ie make one letter red), etc)
 			for (var i=0; i <= _webMotionHelpers.modifiableLinks.length - 1; i++) {
 				var reprocessForAltKey = webMotionHelpers.analyzeAndModifyLink(_webMotionHelpers.modifiableLinks[i].linkObj, false);
 				if (reprocessForAltKey) {
@@ -210,11 +220,11 @@ var webMotionHelpers = (function() {
 		if (letterMappings.length == 0) {
 			// no available text inside link (likely an image). For now, do nothing but suggested improvement might be to superimpose a number or letter
 			// on top of the image so that image links can be followed as well
-			return false; 
+			return false;
 		}
 		else {
 			var letterIndex = 0;
-			var chosenLetter = null; 
+			var chosenLetter = null;
 			var chosenLetterOrigPos = null;
 			while ((getTakenAbbreviations(alternative).containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.reservedShortcuts.containsString(letterMappings[letterIndex].processedLetter) || _webMotionHelpers.alwaysPermissibleShortcuts.containsString(letterMappings[letterIndex].processedLetter)) && letterIndex < letterMappings.length - 1) {
 				letterIndex++;
@@ -228,7 +238,7 @@ var webMotionHelpers = (function() {
 				var deltaE = _webMotionHelpers.colorDistance(colorToUse,linkObj.css('color'));
 				if (deltaE < 50) {
 					colorToUse = _webMotionHelpers.alternativeColor;
-				}		
+				}
 
 				if (_webMotionHelpers.hasBackgroundColorProperty(linkObj)) {
 					var deltaE = _webMotionHelpers.colorDistance(_webMotionHelpers.standardColor,linkObj.css('background-color'));
@@ -256,7 +266,7 @@ var webMotionHelpers = (function() {
 				if (linkObj.css('text-transform') == 'capitalize') {
 					// First remove 'capitalize' from the link (otherwise, our tag will be capitalized as well)
 					linkObj.css('text-transform', 'none');
-					var firstLetter = existingInnerHTML[letterMappings[0].originalPosition]; 
+					var firstLetter = existingInnerHTML[letterMappings[0].originalPosition];
 					// then manually capitalize the first letter of the link and insert it. It's not perfect, but good enough.
 					// (it misses all subsequent words where letters should be capitalized, but I think this is still better)
 					// than having the result be something like MEntors.
@@ -272,7 +282,7 @@ var webMotionHelpers = (function() {
 						// by the CSS.
 						newLetter = newLetter.toUpperCase();
 					}
-				} 
+				}
 
 
 				if (alternative) {
@@ -281,7 +291,7 @@ var webMotionHelpers = (function() {
 				else {
 					newInnerHTML = existingInnerHTML.replaceAt(chosenLetterOrigPos, "<webmotion data-active='true' data-modified-color='"+colorToUse+"' data-original-color='"+linkObj.css('color')+"' data-original-fontweight='"+linkObj.css('font-weight')+"' class='regular' style=\"color:"+colorToUse+";font-weight:bold;\">"+newLetter+"</webmotion>");
 				}
-				
+
 				linkObj.html(newInnerHTML);
 				setKeymapKeyValue(chosenLetter, linkObj.prop('href'), alternative);
 				return false;
@@ -310,19 +320,19 @@ var webMotionHelpers = (function() {
 				clearTimeout(_webMotionHelpers.keyPresses[i].timeOutID);
 				_webMotionHelpers.keyPresses[i].timeOutID = null;
 			}
-		}					
+		}
 	}
 
 	_webMotionHelpers.resetAllLinks = function() {
 		$('webmotion').each(function(index, value) {
-			$(this).replaceWith($(this).text());		
+			$(this).replaceWith($(this).text());
 		});
 	}
 
 	_webMotionHelpers.handleAlwaysPermissibleKeyPress = function(pressedChar, e) {
 		if (!(_webMotionHelpers.specialCharactersPressed(e)) && _webMotionHelpers.noInputFieldsActive()) {
 			switch(pressedChar)
-			{	
+			{
 				default:
 				break;
 			}
@@ -330,16 +340,16 @@ var webMotionHelpers = (function() {
 	}
 
 	_webMotionHelpers.handleAlphaNumericKeyPress = function(pressedChar, e) {
-		if (_webMotionHelpers.noInputFieldsActive()) {			
+		if (_webMotionHelpers.noInputFieldsActive()) {
 			var siteAllowed = !(_webMotionHelpers.isURLBlocked(window.location.href));
 			var noSpecialKeys = !(_webMotionHelpers.specialCharactersPressed(e));
 			var ctrlAndAltKeys = e.ctrlKey && e.altKey;
-			// Operation will be permitted (ie reserved keys will be handled) if site is allowed and 
+			// Operation will be permitted (ie reserved keys will be handled) if site is allowed and
 			var handleReservedKeys = _webMotionHelpers.reservedShortcuts.containsString(pressedChar) && ((siteAllowed && (!e.metaKey && !e.altKey && !e.ctrlKey) || ctrlAndAltKeys) || (!(siteAllowed) && ctrlAndAltKeys));
 			var handleArrowKeys = (_webMotionHelpers.isArrowKey(e.keyCode) && e.shiftKey) && ((siteAllowed && !(e.metaKey) && !(e.altKey) && !(e.ctrlKey) || ctrlAndAltKeys) || (!(siteAllowed) && ctrlAndAltKeys));
 			if (handleReservedKeys) {
 				switch(pressedChar)
-				{	
+				{
 					case 'h':
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
 					break;
@@ -352,22 +362,22 @@ var webMotionHelpers = (function() {
 					case 'j':
 					if (e.shiftKey) {
 						chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
-							_webMotionHelpers.scrollWindow(response.height - 50);		
+							_webMotionHelpers.scrollWindow(response.height - 50);
 						});
 					}
 					else {
 						_webMotionHelpers.scrollWindow(250);
-					} 					
+					}
 					break;
 					case 'k':
 					if (e.shiftKey) {
 						chrome.runtime.sendMessage({msg: 'get_viewport_dimensions'}, function(response) {
-							_webMotionHelpers.scrollWindow(-response.height + 50);		
+							_webMotionHelpers.scrollWindow(-response.height + 50);
 						});
 					}
 					else {
 						_webMotionHelpers.scrollWindow(-250);
-					} 
+					}
 					break;
 					case 'b':
 					window.history.go(-1);
@@ -375,10 +385,10 @@ var webMotionHelpers = (function() {
 					default:
 					break;
 				}
-			}	
+			}
 			else if (handleArrowKeys) {
 				switch(e.keyCode)
-				{	
+				{
 					case 37:
 					chrome.runtime.sendMessage({msg: 'step_tabs', direction: 'left'}, function(response) {});
 					break;
@@ -394,7 +404,7 @@ var webMotionHelpers = (function() {
 					default:
 					break;
 				}
-			}	
+			}
 			else if (_webMotionHelpers.getKeymap(!(_webMotionHelpers.areRegularsHighlighted()))[pressedChar] != null && (!(_webMotionHelpers.specialCharactersPressed(e)))) {
 				// user pressed 'red' key (ie not one of the reserved keys)
 				// first push the key to the keylog
@@ -404,12 +414,12 @@ var webMotionHelpers = (function() {
 					// "new" character was pressed
 					// first reset all timeouts. For example if we press w w and then e, we don't really care what happened
 					// previously. It should already have been executed (true?)
-					// Then set a timeout (and push the timeoutID to the timeouts array); if timeout passes without 
+					// Then set a timeout (and push the timeoutID to the timeouts array); if timeout passes without
 					// interference, cancel all timeouts and go to link in current window
-					
+
 					var timeOutID = window.setTimeout(function(localChar) {
 						_webMotionHelpers.resetKeyPresses();
-						window.location = _webMotionHelpers.getKeymapValue(localChar, !(_webMotionHelpers.areRegularsHighlighted()));	
+						window.location = _webMotionHelpers.getKeymapValue(localChar, !(_webMotionHelpers.areRegularsHighlighted()));
 					}, 300, pressedChar);
 					_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
 				}
@@ -433,17 +443,17 @@ var webMotionHelpers = (function() {
 						_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
 					}
 				}
-				else if ((_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character) && (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 3].character)) {					
+				else if ((_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character) && (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].character == _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 3].character)) {
 					if (_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeStamp - _webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 2].timeStamp < 300) {
 						//note that this 500 + the previosu 500 must add up to 1000?
 						// clear keypresses + open up in new tab (don't follow tab)
 						// no timer necessary
 						_webMotionHelpers.resetKeyPresses();
 						if (_webMotionHelpers.premium) {
-							
-							chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: _webMotionHelpers.getKeymapValue(pressedChar, !(_webMotionHelpers.areRegularsHighlighted()))}, function(response) {});	
+
+							chrome.runtime.sendMessage({msg: 'new_tab_no_follow', url: _webMotionHelpers.getKeymapValue(pressedChar, !(_webMotionHelpers.areRegularsHighlighted()))}, function(response) {});
 						}
-						
+
 					}
 					else {
 						//consider this identical to the first one, ie consider the keys separate despite they were the same
@@ -455,8 +465,8 @@ var webMotionHelpers = (function() {
 						_webMotionHelpers.keyPresses[_webMotionHelpers.keyPresses.length - 1].timeOutID = timeOutID;
 					}
 				}
-			}							
-		} 
+			}
+		}
 	}
 	_webMotionHelpers.initializeAltKeyListener = function() {
 		$(document).on("keydown", function(e) {
@@ -509,11 +519,11 @@ _webMotionHelpers.getFirstParentElementWithBGProperty = function(elem) {
 		}
 	}
 	return false;
-}	
+}
 
 _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		// if we do this the traditional elem.css('background-color')
-		// way, seems we are getting rgb(0,0,0) as a response even if it's 
+		// way, seems we are getting rgb(0,0,0) as a response even if it's
 		// not set. Use this method to make sure an element has a background property.
 		return (elem.css('background-color') != 'rgba(0, 0, 0, 0)');
 	}
@@ -534,11 +544,11 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		var bDiff = color1.b - color2.b;
 		// -> "Delta-E"
 		return Math.sqrt((Math.pow(lDiff, 2) + Math.pow(aDiff, 2) + Math.pow(bDiff, 2)));
-	}	
+	}
 
 	_webMotionHelpers.initializeFocusBlurListeners = function() {
 
-		window.addEventListener("focus", function(event) { 
+		window.addEventListener("focus", function(event) {
 			this.cmdPressed = false;
 			this.shiftPressed = false;
 			this.altPressed = false;
@@ -546,7 +556,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 
 		}, false);
 
-		window.addEventListener("blur", function(event) { 
+		window.addEventListener("blur", function(event) {
 			this.cmdPressed = false;
 			this.shiftPressed = false;
 			this.altPressed = false;
@@ -560,13 +570,13 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		// Checks if an element (a link) is currently visible on the screen. If not visible, don't process / highlight.
 		var docViewTop = $(window).scrollTop();
 		var docViewBottom = docViewTop + this.viewPortHeight;
-		
+
 		var docViewLeft = $(window).scrollLeft();
 		var docViewRight = docViewLeft + this.viewPortWidth;
 
 		var elemTop = $(elem).offset().top;
 		var elemBottom = elemTop + $(elem).height();
-		
+
 		var elemLeft = $(elem).offset().left;
 		var elemRight = elemLeft + $(elem).width();
 
@@ -582,7 +592,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 	}
 
 	_webMotionHelpers.noInputFieldsActive = function() {
-		// Checks to make sure user is not currently typing in any kind of input field. If user is typing in an input field, 
+		// Checks to make sure user is not currently typing in any kind of input field. If user is typing in an input field,
 		// we do not want to follow links.
 		// Note the special case for facebook. Will likely need to add more exceptions of sites which have custom input fields.
 		var el = document.activeElement;
@@ -592,16 +602,16 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 			return !($("#headNav div.innerWrap div.textInput div[role='textbox']").attr('aria-expanded') == 'true' || inputFieldsActive);
 		}
 		else {
-			return !(inputFieldsActive);			
+			return !(inputFieldsActive);
 		}
 	}
-	
+
 	_webMotionHelpers.scrollWindow = function(px) {
 		var sign = '+';
 		if (px < 0) {
 			sign = '-';
 		}
-		
+
 		$.scrollTo(sign + '=' + Math.abs(px) + 'px', 250, {
 			axis: 'y',
 			easing: 'easeInOutCubic',
@@ -615,7 +625,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		// 1) Be in view
 		// 2) have non blank href attribute
 		// 3) Not contain the string "javascript" (we don't want to be able to follow these links).
-		// 4) Not reference the current page 
+		// 4) Not reference the current page
 		// Must contain at least one alpha numeric character
 		var positiveTextRequirements = new RegExp("[A-Za-z0-9]+");
 		var textIndentation = Math.abs(parseInt(DOMElem.css('text-indent')));
@@ -627,24 +637,24 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 
 	_webMotionHelpers.genereateLetterToHTMLMapping = function(linkDOMElem) {
 		/*
-		This method takes a link DOM element from jQuery (ie <a id='test' href='/xyz'>Hello there!</a>, etc) and looks at the html / text inside the link (in this example: "Hello there!"), 
-		and figures out which of the letters in that string are actually candidates for being replaced with a hotkey (and formatted as red). 
+		This method takes a link DOM element from jQuery (ie <a id='test' href='/xyz'>Hello there!</a>, etc) and looks at the html / text inside the link (in this example: "Hello there!"),
+		and figures out which of the letters in that string are actually candidates for being replaced with a hotkey (and formatted as red).
 
 		It also maps those candidates to the position of that letter in the string. So for example, 'h' will be mapped to 0, 'o' will be mapped to 5. If the innerHTML is not
 		just text but rather an html expression, it still works: for example innerHTML is "<b>Hello</b>": 'h' -> 3
 
-		It removes duplicates, lower cases everything, and ignores non-alphanumeric characters. It also removes any of the letters considered a reserved shortcut, 
+		It removes duplicates, lower cases everything, and ignores non-alphanumeric characters. It also removes any of the letters considered a reserved shortcut,
 		as defined above by _webMotionHelpers.reservedShortcuts.
 
 		The actual output of the above example will look like this:
 
-		[{"processedLetter":"h","originalPosition":0},{"processedLetter":"e","originalPosition":1},{"processedLetter":"l","originalPosition":2},{"processedLetter":"o","originalPosition":4},{"processedLetter":"t","originalPosition":6},{"processedLetter":"r","originalPosition":9}] 
+		[{"processedLetter":"h","originalPosition":0},{"processedLetter":"e","originalPosition":1},{"processedLetter":"l","originalPosition":2},{"processedLetter":"o","originalPosition":4},{"processedLetter":"t","originalPosition":6},{"processedLetter":"r","originalPosition":9}]
 
-		It can also handle complex things, such as this one: 
+		It can also handle complex things, such as this one:
 
-		<a id='test' href='x'>Hello <em>brother</em>, how the <span><b>DEUCE</b></span> are you???</a>, which would return: 
+		<a id='test' href='x'>Hello <em>brother</em>, how the <span><b>DEUCE</b></span> are you???</a>, which would return:
 
-		[{"processedLetter":"h","originalPosition":0},{"processedLetter":"e","originalPosition":1},{"processedLetter":"l","originalPosition":2},{"processedLetter":"o","originalPosition":4},{"processedLetter":"b","originalPosition":10},{"processedLetter":"r","originalPosition":11},{"processedLetter":"t","originalPosition":13},{"processedLetter":"w","originalPosition":26},{"processedLetter":"d","originalPosition":41},{"processedLetter":"u","originalPosition":43},{"processedLetter":"c","originalPosition":44},{"processedLetter":"a","originalPosition":58},{"processedLetter":"y","originalPosition":62}] 
+		[{"processedLetter":"h","originalPosition":0},{"processedLetter":"e","originalPosition":1},{"processedLetter":"l","originalPosition":2},{"processedLetter":"o","originalPosition":4},{"processedLetter":"b","originalPosition":10},{"processedLetter":"r","originalPosition":11},{"processedLetter":"t","originalPosition":13},{"processedLetter":"w","originalPosition":26},{"processedLetter":"d","originalPosition":41},{"processedLetter":"u","originalPosition":43},{"processedLetter":"c","originalPosition":44},{"processedLetter":"a","originalPosition":58},{"processedLetter":"y","originalPosition":62}]
 		*/
 		// console.log('+++++++++++++++++++++++++++++++++++++++++++++');
 
@@ -653,7 +663,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		linkDOMElem.contents().each(function(index, value) {
 			var isPureText = ($(this).context.nodeName == '#text');
 			if (isPureText) {
-				// charOffset = if we have three nodes, the first one has an offset of 0, the second 
+				// charOffset = if we have three nodes, the first one has an offset of 0, the second
 				// has an offset of the length of the first, and the third one has an offset of the 2 first ones
 				// used to be this!!!!
 				_webMotionHelpers.DOMElemForEscaping.innerHTML = $(this).text();
@@ -685,11 +695,11 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 					while ( (result = regEx.exec(nodesContainer[i].txt)) ) {
 						indices.push(result.index);
 					}
-					// Indices will contain the search results, for example: for search string "&Hej&A&" => "&amp;Hej&amp;A&amp;" 
+					// Indices will contain the search results, for example: for search string "&Hej&A&" => "&amp;Hej&amp;A&amp;"
 					// if searching for "&amp;", resulting indices => [0, 8, 14] (ie 3 matches)
 					for(var e = 0; e <= indices.length - 1; e++) {
 						for(var f = 0; f <= _webMotionHelpers.reservedHTMLCharacters[ind].length - 1; f++ ) {
-							forbiddenPositions.push(indices[e] + f + startPos);							
+							forbiddenPositions.push(indices[e] + f + startPos);
 						}
 					}
 					// if string is as follows: <em>&amp;B&amp;HAJ&lt;</em>, then forbiddenPositions will be:
@@ -701,40 +711,40 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 
 					// We only want the letter if it's alpha numeric and if we haven't already seen it, and if it's not a reserved shortcut.
 					// Note: *** adding to list of criteria: we also don't want it if it's among the forbidden letters.
-					// NOTE: WE ACTUALLY DO WANT THE LETTERS EVEN IF IT'S A RESERVED SHORTCUT. SO COMMENTING OUT 
+					// NOTE: WE ACTUALLY DO WANT THE LETTERS EVEN IF IT'S A RESERVED SHORTCUT. SO COMMENTING OUT
 					// THAT AND REPLACING SO THIS HAPPENS. WE WANT THIS BECAUSE OF FOR A WORD LIKE "back", IF CAPITALIZE IS PRESENT
 					// WE WANT TO BE ABLE TO CAPITALIZE THE FIRST WORD IF NEEDED. THUS WE MUST KNOW ABOUT IT.
 					if (this.isAlphanumeric(currentLetter) && (forbiddenPositions.indexOf(j) == -1) && !(uniqueLettersInNodes.containsString(currentLetter))) {
-						miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});				
+						miniMapping.push({processedLetter: currentLetter, originalPosition: j + nodesContainer[i].charOffset});
 						uniqueLettersInNodes.push(currentLetter);
 					}
 				}
-				// we only want to deal with stuff where there is no ambiguity. Ie we don't want to 
+				// we only want to deal with stuff where there is no ambiguity. Ie we don't want to
 				// go down the rabbithole of something like <span>pan</span>, etc...
 				// However, <span>Pan</span> should be fine. Which will be the case with the above code as well, as it is case-sensivite.
 			}
 			// now we append the current minimapping to the larger metaMiniMapping
 			metaMiniMapping.push.apply(metaMiniMapping, miniMapping);
 		}
-		
+
 		return metaMiniMapping;
 	}
 
 	// A bunch of getters and setters...
 	function getTakenAbbreviations(alternative) {
 		if (alternative) {
-			return _webMotionHelpers.takenAbbreviationsAlt;		
-		}	
+			return _webMotionHelpers.takenAbbreviationsAlt;
+		}
 		else {
-			return _webMotionHelpers.takenAbbreviations;		
+			return _webMotionHelpers.takenAbbreviations;
 		}
 	}
 	function pushToTakenAbbreviations(chosenLetter, alternative) {
 		if (alternative) {
-			_webMotionHelpers.takenAbbreviationsAlt.push(chosenLetter);		
-		}	
+			_webMotionHelpers.takenAbbreviationsAlt.push(chosenLetter);
+		}
 		else {
-			_webMotionHelpers.takenAbbreviations.push(chosenLetter);		
+			_webMotionHelpers.takenAbbreviations.push(chosenLetter);
 		}
 	}
 
@@ -744,7 +754,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		}
 		else {
 			_webMotionHelpers.keyMap[key] = value;
-		} 
+		}
 	}
 
 	_webMotionHelpers.getKeymap = function(alternative) {
@@ -753,18 +763,18 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		}
 		else {
 			return _webMotionHelpers.keyMap;
-		} 
+		}
 	}
 
 
 
 
-	_webMotionHelpers.isURLBlocked = function(url, blockArgs) {	
+	_webMotionHelpers.isURLBlocked = function(url, blockArgs) {
 		// blockArgs are optional, if not there / have not been initialized, we will use
 		// _webMotionHelpers.blockedRootDomains
-		// _webMotionHelpers.blockedFullDomains 
+		// _webMotionHelpers.blockedFullDomains
 		// _webMotionHelpers.blockedPages instead.
-		// The reason for this is that we can't always assume that _webMotionHelpers.blockedRootDomains etc have been initialized. 
+		// The reason for this is that we can't always assume that _webMotionHelpers.blockedRootDomains etc have been initialized.
 		// Need the option of supplying them manually as well. For example, they won't have been initialized
 		// when calling from popup.js.
 
@@ -776,13 +786,13 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 			localBlocks = blockArgs;
 		}
 		if (localBlocks.blockedRootDomains.containsString(_webMotionHelpers.extractRootDomainFromURL(url))) {
-			return true; 
+			return true;
 		}
 		if (localBlocks.blockedFullDomains.containsString(_webMotionHelpers.extractFullDomainFromURL(url))) {
-			return true; 
+			return true;
 		}
 		if (localBlocks.blockedPages.containsString(url)) {
-			return true; 
+			return true;
 		}
 		return false;
 	}
@@ -793,7 +803,7 @@ _webMotionHelpers.hasBackgroundColorProperty = function(elem) {
 		}
 		else {
 			return _webMotionHelpers.keyMap[key];
-		} 
+		}
 	}
 	_webMotionHelpers.twoLevelTLDs = ["com.ac",
 	"co.uk",
