@@ -22,7 +22,7 @@ WebMotion normally highlights the links using a **red** color, but is smart enou
 
 ### "Double pressing" a letter...
 
-Opens up the page in a new tab.
+Opens up the link in a new tab.
 
 ## Code structure
 
