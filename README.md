@@ -27,7 +27,9 @@ Opens up the link in a new tab.
 ## Code structure
 
 [webMotion.js](https://github.com/eriklinde/webmotion/blob/master/webMotion.js) (main file)
+
 [webMotionHelpers.js](https://github.com/eriklinde/webmotion/blob/master/webMotionHelpers.js) (contains the bulk of the code)
+
 [background.js](https://github.com/eriklinde/webmotion/blob/master/background.js) (for the back-end (communication with Chrome, etc.))
 
 ## Contributions
