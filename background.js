@@ -71,18 +71,18 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	else if (request.msg == 'add_to_block_list') {
 		chrome.tabs.getSelected(function(tab) {
 			if (request.type == 'fullDomain') {
-				if (!(blockedFullDomains.containsString(webMotionHelpers.extractFullDomainFromURL(tab.url)))) {
+				if (!(blockedFullDomains.containsString(domainUtils.extractFullDomainFromURL(tab.url)))) {
 					// only add if it's not already there
-					blockedFullDomains.push(webMotionHelpers.extractFullDomainFromURL(tab.url));
-					deactivateRelevantTabsAfterAddingToBlockList({'url' : webMotionHelpers.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'})
+					blockedFullDomains.push(domainUtils.extractFullDomainFromURL(tab.url));
+					deactivateRelevantTabsAfterAddingToBlockList({'url' : domainUtils.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'})
 					chrome.storage.sync.set({'blockedFullDomains': blockedFullDomains}, function() {});
 				}
 			}
 			else if (request.type == 'rootDomain') {
-				if (!(blockedRootDomains.containsString(webMotionHelpers.extractRootDomainFromURL(tab.url)))) {
+				if (!(blockedRootDomains.containsString(domainUtils.extractRootDomainFromURL(tab.url)))) {
 					// only add if it's not already there
-					blockedRootDomains.push(webMotionHelpers.extractRootDomainFromURL(tab.url));
-					deactivateRelevantTabsAfterAddingToBlockList({'url' : webMotionHelpers.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'})
+					blockedRootDomains.push(domainUtils.extractRootDomainFromURL(tab.url));
+					deactivateRelevantTabsAfterAddingToBlockList({'url' : domainUtils.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'})
 					chrome.storage.sync.set({'blockedRootDomains': blockedRootDomains}, function() {});
 				}
 			}
@@ -99,24 +99,24 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	else if (request.msg == 'remove_from_block_list') {
 		chrome.tabs.getSelected(function(tab) {
 			if (request.type == 'fullDomain') {
-				if ((blockedFullDomains.containsString(webMotionHelpers.extractFullDomainFromURL(tab.url)))) {
-					var index = blockedFullDomains.indexOf(webMotionHelpers.extractFullDomainFromURL(tab.url));
+				if ((blockedFullDomains.containsString(domainUtils.extractFullDomainFromURL(tab.url)))) {
+					var index = blockedFullDomains.indexOf(domainUtils.extractFullDomainFromURL(tab.url));
 					if (index > -1) {
  					   blockedFullDomains.splice(index, 1);
 					}
 					chrome.storage.sync.set({'blockedFullDomains': blockedFullDomains}, function() {
-						activateRelevantTabsAfterRemovingFromBlockList({'url' : webMotionHelpers.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'});
+						activateRelevantTabsAfterRemovingFromBlockList({'url' : domainUtils.extractFullDomainFromURL(tab.url), 'type' : 'fullDomain'});
 					});
 				}
 			}
 			else if (request.type == 'rootDomain') {
-				if ((blockedRootDomains.containsString(webMotionHelpers.extractRootDomainFromURL(tab.url)))) {
-					var index = blockedRootDomains.indexOf(webMotionHelpers.extractRootDomainFromURL(tab.url));
+				if ((blockedRootDomains.containsString(domainUtils.extractRootDomainFromURL(tab.url)))) {
+					var index = blockedRootDomains.indexOf(domainUtils.extractRootDomainFromURL(tab.url));
 					if (index > -1) {
  					   blockedRootDomains.splice(index, 1);
 					}
 					chrome.storage.sync.set({'blockedRootDomains': blockedRootDomains}, function() {
-						activateRelevantTabsAfterRemovingFromBlockList({'url' : webMotionHelpers.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'});
+						activateRelevantTabsAfterRemovingFromBlockList({'url' : domainUtils.extractRootDomainFromURL(tab.url), 'type' : 'rootDomain'});
 					});
 				}
 			}
@@ -162,7 +162,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		sendResponse({height: sender.tab.height, width: sender.tab.width});
 	}
 	else if (request.msg == 'extract_domain') {
-		sendResponse({fullDomain: webMotionHelpers.extractFullDomainFromURL(request.data), rootDomain:webMotionHelpers.extractRootDomainFromURL(request.data)});
+		sendResponse({fullDomain: domainUtils.extractFullDomainFromURL(request.data), rootDomain:domainUtils.extractRootDomainFromURL(request.data)});
 	}
 	else if (request.msg == 'update_all_icons') {
 		// updates color for all icons in every tab
@@ -219,12 +219,12 @@ function deactivateRelevantTabsAfterAddingToBlockList(urlObj) {
 		for(var i = 0; i <= windowCollection.length - 1; i++) {
 			for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 				if (urlObj.type == 'fullDomain') {
-					if (webMotionHelpers.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
+					if (domainUtils.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(false);"}, function() {});
 					}
 				}
 				else if (urlObj.type == 'rootDomain') {
-					if (webMotionHelpers.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
+					if (domainUtils.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(false);"}, function() {});
 					}
 				}
@@ -248,12 +248,12 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 				localBlocks.blockedFullDomains = blockedFullDomains;
 				localBlocks.blockedPages = blockedPages;
 				if (urlObj.type == 'fullDomain') {
-					if (webMotionHelpers.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
+					if (domainUtils.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
 					}
 				}
 				else if (urlObj.type == 'rootDomain') {
-					if (webMotionHelpers.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
+					if (domainUtils.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
 						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
 					}
 				}
