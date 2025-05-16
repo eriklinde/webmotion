@@ -12,6 +12,9 @@ Runs when chrome starts; contains the code to communicate with Chrome's backgrou
 
 */
 
+// Load dependencies when running as a service worker
+importScripts('domainUtils.js', 'webMotionHelpers.js');
+
 
 
 
@@ -20,6 +23,14 @@ Runs when chrome starts; contains the code to communicate with Chrome's backgrou
 var blockedRootDomains;
 var blockedFullDomains;
 var blockedPages;
+
+function runInTab(tabId, func, args) {
+    chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: func,
+        args: args || []
+    });
+}
 
 
 chrome.storage.sync.get(['blockedRootDomains', 'blockedFullDomains', 'blockedPages'], function(items) {
@@ -62,15 +73,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		chrome.tabs.create({url: request.url, active: false, index: sender.tab.index + 1}, function(tab) {
 		});
 	}
-	else if (request.msg == 'close_selected_tab') {
-		chrome.tabs.getSelected(function(tab) {
-			var indexOfCurrentTab = tab.index;
-			chrome.tabs.remove(tab.id);
-		});
-	}
-	else if (request.msg == 'add_to_block_list') {
-		chrome.tabs.getSelected(function(tab) {
-			if (request.type == 'fullDomain') {
+        else if (request.msg == 'close_selected_tab') {
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        var tab = tabs[0];
+                        var indexOfCurrentTab = tab.index;
+                        chrome.tabs.remove(tab.id);
+                });
+        }
+        else if (request.msg == 'add_to_block_list') {
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        var tab = tabs[0];
+                        if (request.type == 'fullDomain') {
 				if (!(blockedFullDomains.containsString(domainUtils.extractFullDomainFromURL(tab.url)))) {
 					// only add if it's not already there
 					blockedFullDomains.push(domainUtils.extractFullDomainFromURL(tab.url));
@@ -96,9 +109,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			}
 		});
 	}
-	else if (request.msg == 'remove_from_block_list') {
-		chrome.tabs.getSelected(function(tab) {
-			if (request.type == 'fullDomain') {
+        else if (request.msg == 'remove_from_block_list') {
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        var tab = tabs[0];
+                        if (request.type == 'fullDomain') {
 				if ((blockedFullDomains.containsString(domainUtils.extractFullDomainFromURL(tab.url)))) {
 					var index = blockedFullDomains.indexOf(domainUtils.extractFullDomainFromURL(tab.url));
 					if (index > -1) {
@@ -135,10 +149,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	}
 
 
-	else if (request.msg == 'step_tabs') {
-		chrome.tabs.getSelected(function(currentTab) {
-			chrome.tabs.getAllInWindow(currentTab.windowId, function(tabCollection) {
-				chrome.tabs.update(currentTab.id, {active: false, selected: false, highlighted: false});
+        else if (request.msg == 'step_tabs') {
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                        var currentTab = tabs[0];
+                        chrome.tabs.query({windowId: currentTab.windowId}, function(tabCollection) {
+                                chrome.tabs.update(currentTab.id, {active: false, selected: false, highlighted: false});
 				if (request.direction == 'left') {
 					if (currentTab.index == 0) {
 						chrome.tabs.update(tabCollection[tabCollection.length - 1].id, {active: true, selected: true, highlighted: true});
@@ -171,11 +186,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 				for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 					if (request.active) {
 						//set to 'active', ie colored version
-						chrome.browserAction.setIcon({path:"icon38.png", tabId:windowCollection[i].tabs[j].id});
+                                                chrome.action.setIcon({path:"icon38.png", tabId:windowCollection[i].tabs[j].id});
 					}
 					else {
 						// set to black and white version (inactive)
-						chrome.browserAction.setIcon({path:"icon38_bw.png", tabId:windowCollection[i].tabs[j].id});
+                                                chrome.action.setIcon({path:"icon38_bw.png", tabId:windowCollection[i].tabs[j].id});
 					}
 				}
 			}
@@ -191,17 +206,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 						localBlocks.blockedFullDomains = blockedFullDomains;
 						localBlocks.blockedPages = blockedPages;
 
-						if (!(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, true);"}, function() {});
-						}
-						else {
-							// if blocked, just initialize the h, l keys.
-							chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.initializeAlwaysOnKeyListeners();"}, function() {});
-						}
-					}
-					else {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(true);"}, function() {});
-					}
+                                                if (!(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
+                                                        runInTab(windowCollection[i].tabs[j].id, function() {
+                                                                webMotionHelpers.activateWebMotion(true, true);
+                                                        });
+                                                }
+                                                else {
+                                                        // if blocked, just initialize the h, l keys.
+                                                        runInTab(windowCollection[i].tabs[j].id, function() {
+                                                                webMotionHelpers.initializeAlwaysOnKeyListeners();
+                                                        });
+                                                }
+                                        }
+                                        else {
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.deactivateWebMotion(true);
+                                                });
+                                        }
 				}
 			}
 		});
@@ -220,17 +241,23 @@ function deactivateRelevantTabsAfterAddingToBlockList(urlObj) {
 			for(var j = 0; j <= windowCollection[i].tabs.length - 1; j++) {
 				if (urlObj.type == 'fullDomain') {
 					if (domainUtils.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.deactivateWebMotion(false);
+                                                });
 					}
 				}
 				else if (urlObj.type == 'rootDomain') {
 					if (domainUtils.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.deactivateWebMotion(false);
+                                                });
 					}
 				}
 				else if (urlObj.type == 'page') {
 					if (windowCollection[i].tabs[j].url == urlObj.url) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.deactivateWebMotion(false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.deactivateWebMotion(false);
+                                                });
 					}
 				}
 			}
@@ -249,17 +276,23 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 				localBlocks.blockedPages = blockedPages;
 				if (urlObj.type == 'fullDomain') {
 					if (domainUtils.extractFullDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.activateWebMotion(true, false);
+                                                });
 					}
 				}
 				else if (urlObj.type == 'rootDomain') {
 					if (domainUtils.extractRootDomainFromURL(windowCollection[i].tabs[j].url) == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.activateWebMotion(true, false);
+                                                });
 					}
 				}
 				else if (urlObj.type == 'page') {
 					if (windowCollection[i].tabs[j].url == urlObj.url && !(webMotionHelpers.isURLBlocked(windowCollection[i].tabs[j].url, localBlocks))) {
-						chrome.tabs.executeScript(windowCollection[i].tabs[j].id, {code: "webMotionHelpers.activateWebMotion(true, false);"}, function() {});
+                                                runInTab(windowCollection[i].tabs[j].id, function() {
+                                                        webMotionHelpers.activateWebMotion(true, false);
+                                                });
 					}
 				}
 			}
@@ -269,5 +302,5 @@ function activateRelevantTabsAfterRemovingFromBlockList(urlObj) {
 
 
 Array.prototype.containsString=function(str) {
-	return $.inArray(str, this) != -1;
+        return this.indexOf(str) != -1;
 }
