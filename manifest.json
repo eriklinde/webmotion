@@ -5,7 +5,7 @@
   "author": "Erik Linde", 
     
   "background": {
-    "scripts": ["jQuery.js", "webMotionHelpers.js", "background.js"] 
+    "scripts": ["jQuery.js", "domainUtils.js", "webMotionHelpers.js", "background.js"] 
   },
 
   "name": "WebMotion",
@@ -28,7 +28,7 @@
   },
 
   "content_scripts": [ {
-    "js": [ "jQuery.js", "jQueryEasing.js", "jQuery.scrollTo.js", "webMotionHelpers.js", "iColor.js", "webMotion.js" ],
+    "js": [ "jQuery.js", "jQueryEasing.js", "jQuery.scrollTo.js", "domainUtils.js", "webMotionHelpers.js", "iColor.js", "webMotion.js" ],
     "matches": [ "http://*/*", "https://*/*"]
     }]
 }
